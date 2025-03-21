@@ -1,7 +1,7 @@
 <template>
-  <div class="container">
-    <h2>Products</h2>
-    <table class="table">
+  <div class="container page-container">
+    <h2 class="neon-text text-center">🛒 Available Products</h2>
+    <table class="neon-table">
       <thead>
       <tr>
         <th>Name</th>
@@ -18,9 +18,23 @@
         <td>${{ product.price }}</td>
         <td>{{ product.stockQuantity }}</td>
         <td>
-          <router-link :to="'/product/' + product.id" class="btn btn-info">Details</router-link>
-          <button class="btn btn-primary" @click="promptLogin()" v-if="!isAuthenticated">Add to Cart</button>
-          <button class="btn btn-success" @click="addToCart(product.id)" v-if="isAuthenticated">Add to Cart</button>
+          <router-link :to="'/product/' + product.id" class="btn btn-info">
+            Details
+          </router-link>
+          <button
+              class="btn btn-primary"
+              v-if="!isAuthenticated"
+              @click="promptLogin()"
+          >
+            Add to Cart
+          </button>
+          <button
+              class="btn btn-success"
+              v-if="isAuthenticated"
+              @click="addToCart(product.id)"
+          >
+            Add to Cart
+          </button>
         </td>
       </tr>
       </tbody>
@@ -72,3 +86,20 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.page-container {
+  padding-top: 80px;
+}
+.neon-table {
+  width: 100%;
+  margin: 20px auto;
+  border-collapse: collapse;
+}
+.neon-table th,
+.neon-table td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--primary-color);
+}
+</style>

@@ -1,39 +1,76 @@
 <template>
-  <div class="container">
-    <h2>Admin Dashboard</h2>
+  <div class="container page-container">
+    <h2 class="neon-text">👨‍💼 Admin Dashboard</h2>
 
-    <h3>Products</h3>
-    <router-link to="/admin/products/new" class="btn btn-success">Add Product</router-link>
-    <table class="table">
-      <thead>
-      <tr>
-        <th>Name</th>
-        <th>Category</th>
-        <th>Price</th>
-        <th>Stock</th>
-        <th>Actions</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-for="product in products" :key="product.id">
-        <td>{{ product.name }}</td>
-        <td>{{ product.category.name }}</td>
-        <td>${{ product.price }}</td>
-        <td>{{ product.stockQuantity }}</td>
-        <td>
-          <button class="btn btn-warning">Edit</button>
-          <button class="btn btn-danger" @click="deleteProduct(product.id)">Delete</button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+    <section class="section">
+      <h3>Manage Products</h3>
+      <router-link to="/admin/products/new" class="btn btn-purple">
+        ➕ Add Product
+      </router-link>
+      <table class="neon-table">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="product in products" :key="product.id">
+          <td>{{ product.name }}</td>
+          <td>{{ product.category.name }}</td>
+          <td>${{ product.price }}</td>
+          <td>{{ product.stockQuantity }}</td>
+          <td>
+            <button class="btn btn-warning">Edit</button>
+            <button class="btn btn-danger" @click="deleteProduct(product.id)">
+              Delete
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
 
-    <h3>User Login Logs</h3>
-    <ul>
-      <li v-for="log in logs" :key="log.id">
-        {{ log.user.email }} - {{ new Date(log.loginTime).toLocaleString() }} from {{ log.ipAddress }}
-      </li>
-    </ul>
+    <section class="section">
+      <h3>Manage Categories</h3>
+      <router-link to="/admin/categories/new" class="btn btn-purple">
+        ➕ Add Category
+      </router-link>
+      <table class="neon-table">
+        <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="category in categories" :key="category.id">
+          <td>{{ category.name }}</td>
+          <td>{{ category.description }}</td>
+          <td>
+            <button class="btn btn-warning">Edit</button>
+            <button class="btn btn-danger" @click="deleteCategory(category.id)">
+              Delete
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h3>User Login Logs</h3>
+      <ul class="log-list">
+        <li v-for="log in logs" :key="log.id">
+          {{ log.user.email }} -
+          {{ new Date(log.loginTime).toLocaleString() }} from {{ log.ipAddress }}
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
@@ -44,7 +81,8 @@ export default {
   data() {
     return {
       products: [],
-      logs: []
+      logs: [],
+      categories: []
     };
   },
   methods: {
@@ -56,14 +94,43 @@ export default {
       const res = await api.getLoginLogs();
       this.logs = res.data;
     },
+    async fetchCategories() {
+      const res = await api.getCategories();
+      this.categories = res.data;
+    },
     async deleteProduct(id) {
       await api.deleteProduct(id);
       this.fetchProducts();
+    },
+    async deleteCategory(id) {
+      await api.deleteCategory(id);
+      this.fetchCategories();
     }
   },
   mounted() {
     this.fetchProducts();
     this.fetchLogs();
+    this.fetchCategories();
   }
 };
 </script>
+
+<style scoped>
+.page-container {
+  padding-top: 80px; /* leave room for fixed navbar */
+}
+.section {
+  margin-bottom: 40px;
+}
+.neon-table {
+  width: 100%;
+  margin: 20px auto;
+  border-collapse: collapse;
+}
+.neon-table th,
+.neon-table td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--primary-color);
+}
+</style>

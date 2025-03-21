@@ -1,7 +1,7 @@
 <template>
-  <div class="container">
-    <h2>Your Cart</h2>
-    <table class="table">
+  <div class="container page-container">
+    <h2 class="neon-text text-center">Your Cart</h2>
+    <table class="neon-table">
       <thead>
       <tr>
         <th>Product</th>
@@ -15,34 +15,51 @@
       <tbody>
       <tr v-for="item in cart" :key="item.id">
         <td>
-          <router-link :to="'/product/' + item.product.id">{{ item.product.name }}</router-link>
+          <router-link :to="'/product/' + item.product.id">
+            {{ item.product.name }}
+          </router-link>
         </td>
         <td>
-          <input type="number" v-model="item.quantity" min="1" :max="item.product.stockQuantity" @change="updateQuantity(item)">
+          <input
+              type="number"
+              v-model.number="item.quantity"
+              min="1"
+              :max="item.product.stockQuantity"
+              @change="updateQuantity(item)"
+              class="quantity-input"
+          />
         </td>
         <td>{{ item.product.stockQuantity }}</td>
         <td>${{ item.product.price }}</td>
         <td>${{ (item.product.price * item.quantity).toFixed(2) }}</td>
         <td>
-          <button class="btn btn-danger" @click="removeItem(item.product.id)">Remove</button>
+          <button class="btn btn-danger" @click="removeItem(item.product.id)">
+            Remove
+          </button>
         </td>
       </tr>
       </tbody>
     </table>
-    <h4>Total: ${{ cartTotal }}</h4>
-    <button class="btn btn-primary" @click="checkout">Proceed to Checkout</button>
+    <h4 class="text-center">Total: ${{ cartTotal }}</h4>
+    <div class="text-center">
+      <button class="btn btn-primary" @click="checkout">
+        Proceed to Checkout
+      </button>
+    </div>
   </div>
 </template>
 
 <script>
-import api from '../services/api';
+import api from '@/services/api';
 import { mapState, mapActions } from 'vuex';
 
 export default {
   computed: {
     ...mapState(['cart']),
     cartTotal() {
-      return this.cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2);
+      return this.cart
+          .reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+          .toFixed(2);
     }
   },
   methods: {
@@ -56,7 +73,6 @@ export default {
     },
     async checkout() {
       alert('Redirecting to PayPal checkout (Placeholder)');
-      // Add PayPal integration here later
     },
     ...mapActions(['fetchCart'])
   },
@@ -65,3 +81,24 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+.page-container {
+  padding-top: 80px;
+}
+.neon-table {
+  width: 100%;
+  margin: 20px auto;
+  border-collapse: collapse;
+}
+.neon-table th,
+.neon-table td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--primary-color);
+}
+.quantity-input {
+  width: 60px;
+  text-align: center;
+}
+</style>
