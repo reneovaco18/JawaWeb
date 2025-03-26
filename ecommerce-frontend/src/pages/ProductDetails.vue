@@ -16,37 +16,55 @@
 </template>
 
 <script>
-import api from '@/services/api';  // import as "api" not "axios"
+import api from '@/services/api';
 
 export default {
   data() {
-    return { product: {} };
+    return {
+      product: {}
+    };
   },
   async mounted() {
     const productId = this.$route.params.id;
-    // Use the proper method from the API module
     const response = await api.getProduct(productId);
     this.product = response.data;
   },
   methods: {
-    addToCart() {
-      alert('Added to cart!');
+    async addToCart() {
+      if (!this.$store.state.token) {
+        alert('🔒 Please log in to add products to cart.');
+        this.$router.push('/login');
+        return;
+      }
+
+      try {
+        const quantity = 1;
+        await api.addToCart(this.product.id, quantity);
+        await this.$store.dispatch('fetchCart');
+
+        alert('✅ Product added to cart!');
+        this.$router.push('/cart');
+      } catch (error) {
+        console.error('❌ Failed to add product to cart:', error);
+        alert('Failed to add product to cart.');
+      }
     }
   }
 };
 </script>
-
 
 <style scoped>
 .page-container {
   padding-top: 80px;
   text-align: center;
 }
+
 .product-detail {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .product-img {
   width: 100%;
   max-width: 500px;
@@ -54,9 +72,11 @@ export default {
   box-shadow: var(--glow-effect);
   margin-bottom: 20px;
 }
+
 .product-info {
   max-width: 500px;
 }
+
 .highlight {
   color: var(--highlight-color);
   font-weight: bold;
