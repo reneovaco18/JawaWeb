@@ -10,6 +10,7 @@ import OrderHistory from '@/pages/UserOrders.vue';
 import Profile from '@/pages/UserProfile.vue';
 import CategoriesPage from '@/pages/CategoriesPage.vue';
 import CategoryProducts from '@/pages/CategoryProducts.vue';
+import ProductForm from '@/pages/ProductForm.vue';
 
 const routes = [
     { path: '/', component: MainHomePage },
@@ -21,7 +22,9 @@ const routes = [
     { path: '/orders', component: OrderHistory, meta: { requiresAuth: true } },
     { path: '/profile', component: Profile, meta: { requiresAuth: true } },
     { path: '/categories', component: CategoriesPage },
-    { path: '/category/:id', component: CategoryProducts }
+    { path: '/category/:id', component: CategoryProducts },
+    { path: '/admin/products/new', component: ProductForm, meta: { requiresAuth: true, isAdmin: true } },
+    { path: '/admin/products/:id/edit', component: ProductForm, meta: { requiresAuth: true, isAdmin: true } }
 ];
 
 const router = createRouter({

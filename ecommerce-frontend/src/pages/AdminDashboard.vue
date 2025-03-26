@@ -2,6 +2,7 @@
   <div class="container page-container">
     <h2 class="neon-text">👨‍💼 Admin Dashboard</h2>
 
+    <!-- PRODUCTS -->
     <section class="section">
       <h3>Manage Products</h3>
       <router-link to="/admin/products/new" class="btn btn-purple">
@@ -24,8 +25,16 @@
           <td>${{ product.price }}</td>
           <td>{{ product.stockQuantity }}</td>
           <td>
-            <button class="btn btn-warning">Edit</button>
-            <button class="btn btn-danger" @click="deleteProduct(product.id)">
+            <button
+                class="btn btn-warning"
+                @click="editProduct(product.id)"
+            >
+              Edit
+            </button>
+            <button
+                class="btn btn-danger"
+                @click="deleteProduct(product.id)"
+            >
               Delete
             </button>
           </td>
@@ -34,6 +43,7 @@
       </table>
     </section>
 
+    <!-- CATEGORIES -->
     <section class="section">
       <h3>Manage Categories</h3>
       <router-link to="/admin/categories/new" class="btn btn-purple">
@@ -53,7 +63,10 @@
           <td>{{ category.description }}</td>
           <td>
             <button class="btn btn-warning">Edit</button>
-            <button class="btn btn-danger" @click="deleteCategory(category.id)">
+            <button
+                class="btn btn-danger"
+                @click="deleteCategory(category.id)"
+            >
               Delete
             </button>
           </td>
@@ -62,12 +75,14 @@
       </table>
     </section>
 
+    <!-- LOGIN LOGS -->
     <section class="section">
       <h3>User Login Logs</h3>
       <ul class="log-list">
         <li v-for="log in logs" :key="log.id">
           {{ log.user.email }} -
-          {{ new Date(log.loginTime).toLocaleString() }} from {{ log.ipAddress }}
+          {{ new Date(log.loginTime).toLocaleString() }} from
+          {{ log.ipAddress }}
         </li>
       </ul>
     </section>
@@ -105,6 +120,9 @@ export default {
     async deleteCategory(id) {
       await api.deleteCategory(id);
       this.fetchCategories();
+    },
+    editProduct(id) {
+      this.$router.push(`/admin/products/${id}/edit`);
     }
   },
   mounted() {

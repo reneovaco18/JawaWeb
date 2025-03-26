@@ -1,9 +1,11 @@
+// src/services/api.js
 import axios from 'axios';
 
+// This creates a reusable axios instance with a predefined baseURL
 const apiClient = axios.create({
-    // Backend runs on port 8085
-    baseURL: 'http://localhost:8085/api',
-    headers: { 'Content-Type': 'application/json' }
+    baseURL: 'http://localhost:8085/api', // Your backend base URL
+    headers: { 'Content-Type': 'application/json' },
+    withCredentials: true // ⬅️ Required for sending cookies and allowing CORS with credentials
 });
 
 export default {
@@ -81,5 +83,15 @@ export default {
         return apiClient.delete(`/products/${id}`, {
             headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
-    }
+    },
+    createProduct(productData) {
+        return apiClient.post('/products', productData, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+    },
+    updateProduct(id, productData) {
+        return apiClient.put(`/products/${id}`, productData, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+    },
 };
