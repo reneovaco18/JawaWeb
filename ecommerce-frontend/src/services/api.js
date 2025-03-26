@@ -19,7 +19,9 @@ export default {
     getProductsByCategory(categoryId) {
         return apiClient.get(`/products/by-category/${categoryId}`);
     },
-
+    getCategory(id) {
+        return apiClient.get(`/categories/${id}`); // ✅ This was missing
+    },
     // Category API
     getCategories() {
         return apiClient.get('/categories');

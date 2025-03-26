@@ -25,16 +25,10 @@
           <td>${{ product.price }}</td>
           <td>{{ product.stockQuantity }}</td>
           <td>
-            <button
-                class="btn btn-warning"
-                @click="editProduct(product.id)"
-            >
+            <button class="btn btn-warning" @click="editProduct(product.id)">
               Edit
             </button>
-            <button
-                class="btn btn-danger"
-                @click="deleteProduct(product.id)"
-            >
+            <button class="btn btn-danger" @click="deleteProduct(product.id)">
               Delete
             </button>
           </td>
@@ -62,11 +56,10 @@
           <td>{{ category.name }}</td>
           <td>{{ category.description }}</td>
           <td>
-            <button class="btn btn-warning">Edit</button>
-            <button
-                class="btn btn-danger"
-                @click="deleteCategory(category.id)"
-            >
+            <button class="btn btn-warning" @click="editCategory(category.id)">
+              Edit
+            </button>
+            <button class="btn btn-danger" @click="deleteCategory(category.id)">
               Delete
             </button>
           </td>
@@ -81,8 +74,7 @@
       <ul class="log-list">
         <li v-for="log in logs" :key="log.id">
           {{ log.user.email }} -
-          {{ new Date(log.loginTime).toLocaleString() }} from
-          {{ log.ipAddress }}
+          {{ new Date(log.loginTime).toLocaleString() }} from {{ log.ipAddress }}
         </li>
       </ul>
     </section>
@@ -123,6 +115,9 @@ export default {
     },
     editProduct(id) {
       this.$router.push(`/admin/products/${id}/edit`);
+    },
+    editCategory(id) {
+      this.$router.push(`/admin/categories/${id}/edit`);
     }
   },
   mounted() {
@@ -135,16 +130,19 @@ export default {
 
 <style scoped>
 .page-container {
-  padding-top: 80px; /* leave room for fixed navbar */
+  padding-top: 80px;
 }
+
 .section {
   margin-bottom: 40px;
 }
+
 .neon-table {
   width: 100%;
   margin: 20px auto;
   border-collapse: collapse;
 }
+
 .neon-table th,
 .neon-table td {
   padding: 12px;

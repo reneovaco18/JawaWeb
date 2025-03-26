@@ -24,6 +24,9 @@ const routes = [
     { path: '/categories', component: CategoriesPage },
     { path: '/category/:id', component: CategoryProducts },
     { path: '/admin/products/new', component: ProductForm, meta: { requiresAuth: true, isAdmin: true } },
+    { path: '/admin/categories/new', component: () => import('@/pages/CategoryForm.vue'), meta: { requiresAuth: true, isAdmin: true } },
+    { path: '/admin/categories/:id/edit', component: () => import('@/pages/CategoryForm.vue'), meta: { requiresAuth: true, isAdmin: true } },
+
     { path: '/admin/products/:id/edit', component: ProductForm, meta: { requiresAuth: true, isAdmin: true } }
 ];
 
