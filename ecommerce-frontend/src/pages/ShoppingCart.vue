@@ -1,12 +1,11 @@
 <template>
   <div class="container page-container">
     <h2 class="neon-text text-center">Your Cart</h2>
-    <table class="neon-table">
+    <table v-if="cart.length > 0" class="neon-table">
       <thead>
       <tr>
         <th>Product</th>
         <th>Quantity</th>
-        <th>Available Stock</th>
         <th>Price</th>
         <th>Total</th>
         <th>Actions</th>
@@ -15,8 +14,8 @@
       <tbody>
       <tr v-for="item in cart" :key="item.id">
         <td>
-          <router-link :to="'/product/' + item.product.id">
-            {{ item.product.name }}
+          <router-link v-if="item.product?.id" :to="'/product/' + item.product.id">
+            {{ item.product?.name || 'Unnamed Product' }}
           </router-link>
         </td>
         <td>
@@ -24,27 +23,33 @@
               type="number"
               v-model.number="item.quantity"
               min="1"
-              :max="item.product.stockQuantity"
+              :max="item.product?.stockQuantity || 0"
               @change="updateQuantity(item)"
               class="quantity-input"
           />
         </td>
-        <td>{{ item.product.stockQuantity }}</td>
-        <td>${{ item.product.price }}</td>
-        <td>${{ (item.product.price * item.quantity).toFixed(2) }}</td>
+        <td>${{ item.product?.price?.toFixed(2) || '0.00' }}</td>
+        <td>${{ (item.product?.price * item.quantity)?.toFixed(2) || '0.00' }}</td>
         <td>
-          <button class="btn btn-danger" @click="removeItem(item.product.id)">
+          <button class="btn btn-danger" @click="removeItem(item.product?.id)">
             Remove
           </button>
         </td>
       </tr>
       </tbody>
     </table>
-    <h4 class="text-center">Total: ${{ cartTotal }}</h4>
-    <div class="text-center">
-      <button class="btn btn-primary" @click="checkout">
-        Proceed to Checkout
-      </button>
+
+    <div v-if="cart.length === 0" class="empty-cart">
+      <p class="text-center">Your cart is empty</p>
+    </div>
+
+    <div v-else class="checkout-section">
+      <h4 class="text-center">Total: ${{ cartTotal }}</h4>
+      <div class="text-center">
+        <button class="btn btn-primary" @click="checkout">
+          Proceed to Checkout
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -57,22 +62,24 @@ export default {
   computed: {
     ...mapState(['cart']),
     cartTotal() {
-      return this.cart
-          .reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-          .toFixed(2);
+      return this.cart.reduce((sum, item) => {
+        const price = item.product?.price || 0;
+        return sum + (price * item.quantity);
+      }, 0).toFixed(2);
     }
   },
   methods: {
     async updateQuantity(item) {
-      await api.addToCart(item.product.id, item.quantity);
-      this.fetchCart();
+      if (item.quantity > 0) {
+        await api.addToCart(item.product?.id, item.quantity);
+        this.fetchCart();
+      }
     },
     async removeItem(productId) {
-      await api.removeFromCart(productId);
-      this.fetchCart();
-    },
-    async checkout() {
-      alert('Redirecting to PayPal checkout (Placeholder)');
+      if (productId) {
+        await api.removeFromCart(productId);
+        this.fetchCart();
+      }
     },
     ...mapActions(['fetchCart'])
   },
@@ -81,24 +88,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.page-container {
-  padding-top: 80px;
-}
-.neon-table {
-  width: 100%;
-  margin: 20px auto;
-  border-collapse: collapse;
-}
-.neon-table th,
-.neon-table td {
-  padding: 12px;
-  text-align: center;
-  border: 1px solid var(--primary-color);
-}
-.quantity-input {
-  width: 60px;
-  text-align: center;
-}
-</style>

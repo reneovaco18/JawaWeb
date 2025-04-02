@@ -1,7 +1,5 @@
 package hr.java.web.javawebproject.service;
 
-
-
 import hr.java.web.javawebproject.exception.ResourceNotFoundException;
 import hr.java.web.javawebproject.model.CartItem;
 import hr.java.web.javawebproject.model.Product;
@@ -21,44 +19,35 @@ public class CartService {
     private final ProductRepository productRepo;
 
     public List<CartItem> getCartItems(User user) {
-        return cartRepo.findByUserId(user.getId());
+        List<CartItem> items = cartRepo.findByUserId(user.getId());
+        items.forEach(item -> item.getProduct().getName()); // Force product initialization
+        return items;
     }
 
     public CartItem addToCart(User user, Long productId, int quantity) {
-        if (quantity < 1) {
-            throw new IllegalArgumentException("Quantity must be >= 1");
-        }
         Product product = productRepo.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("No product with ID=" + productId));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        // optional: check product stock
-
-        // check if cart item exists
-        List<CartItem> existingItems = cartRepo.findByUserId(user.getId());
-        CartItem item = existingItems.stream()
+        return cartRepo.findByUserId(user.getId()).stream()
                 .filter(ci -> ci.getProduct().getId().equals(productId))
                 .findFirst()
-                .orElse(null);
-
-        if (item == null) {
-            // create new
-            item = CartItem.builder()
-                    .user(user)
-                    .product(product)
-                    .quantity(quantity)
-                    .build();
-        } else {
-            item.setQuantity(item.getQuantity() + quantity);
-        }
-        return cartRepo.save(item);
+                .map(existingItem -> {
+                    existingItem.setQuantity(existingItem.getQuantity() + quantity);
+                    return cartRepo.save(existingItem);
+                })
+                .orElseGet(() -> cartRepo.save(CartItem.builder()
+                        .user(user)
+                        .product(product)
+                        .quantity(quantity)
+                        .build()));
     }
 
     public CartItem updateCartItem(User user, Long productId, int quantity) {
-        // if quantity <= 0, we remove
         if (quantity <= 0) {
             removeCartItem(user, productId);
             return null;
         }
+
         CartItem item = cartRepo.findByUserId(user.getId()).stream()
                 .filter(ci -> ci.getProduct().getId().equals(productId))
                 .findFirst()

@@ -1,12 +1,34 @@
-// src/services/api.js
 import axios from 'axios';
+import store from '@/store';
 
-// This creates a reusable axios instance with a predefined baseURL
 const apiClient = axios.create({
-    baseURL: 'http://localhost:8085/api', // Your backend base URL
-    headers: { 'Content-Type': 'application/json' },
-    withCredentials: true // ⬅️ Required for sending cookies and allowing CORS with credentials
+    baseURL: 'http://localhost:8085/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    withCredentials: true
 });
+
+// Request interceptor to add token
+apiClient.interceptors.request.use(config => {
+    const token = store.state.token;
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+// Response interceptor to handle 403 errors
+apiClient.interceptors.response.use(
+    response => response,
+    error => {
+        if (error.response?.status === 403) {
+            store.dispatch('logout');
+            window.location.href = '/login?error=session_expired';
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default {
     // Product API
@@ -20,8 +42,9 @@ export default {
         return apiClient.get(`/products/by-category/${categoryId}`);
     },
     getCategory(id) {
-        return apiClient.get(`/categories/${id}`); // ✅ This was missing
+        return apiClient.get(`/categories/${id}`);
     },
+
     // Category API
     getCategories() {
         return apiClient.get('/categories');
@@ -46,54 +69,36 @@ export default {
 
     // Cart API
     getCart() {
-        return apiClient.get('/cart', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.get('/cart');
     },
     addToCart(productId, quantity) {
-        return apiClient.post(`/cart?productId=${productId}&quantity=${quantity}`, null, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.post(`/cart?productId=${productId}&quantity=${quantity}`);
     },
     removeFromCart(productId) {
-        return apiClient.delete(`/cart/${productId}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.delete(`/cart/${productId}`);
     },
 
     // Orders API
     getOrders() {
-        return apiClient.get('/orders', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.get('/orders');
     },
     placeOrder(paymentMethod) {
-        return apiClient.post(`/orders?paymentMethod=${paymentMethod}`, null, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.post(`/orders?paymentMethod=${paymentMethod}`);
     },
 
     // Admin Login Logs API
     getLoginLogs() {
-        return apiClient.get('/admin/logins', {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.get('/admin/logins');
     },
 
-    // Product deletion for admin
+    // Product management
     deleteProduct(id) {
-        return apiClient.delete(`/products/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.delete(`/products/${id}`);
     },
     createProduct(productData) {
-        return apiClient.post('/products', productData, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        return apiClient.post('/products', productData);
     },
     updateProduct(id, productData) {
-        return apiClient.put(`/products/${id}`, productData, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-    },
+        return apiClient.put(`/products/${id}`, productData);
+    }
 };
