@@ -17,9 +17,10 @@ public class LoginRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)  // Change to true
     @JoinColumn(name = "user_id")
     private User user;
+
 
     @Column(name = "attempted_username")
     private String attemptedUsername;

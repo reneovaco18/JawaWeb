@@ -46,6 +46,7 @@ public class AuthenticationEventListener implements ApplicationListener<Applicat
     private void handleFailureEvent(AbstractAuthenticationFailureEvent event) {
         String attemptedUsername = event.getAuthentication().getName();
 
+        // Create record WITHOUT requiring a user object
         LoginRecord record = LoginRecord.builder()
                 .attemptedUsername(attemptedUsername)
                 .loginTime(LocalDateTime.now())

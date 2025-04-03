@@ -130,6 +130,7 @@ export default {
     };
   },
   methods: {
+
     async fetchProducts() {
       const res = await api.getProducts();
       this.products = res.data;
@@ -137,7 +138,9 @@ export default {
     async fetchLogs() {
       const res = await api.getLoginLogs();
       this.logs = res.data;
+      this.filteredLogs = [...this.logs]; // Initialize filtered logs with all logs
     },
+
     async fetchCategories() {
       const res = await api.getCategories();
       this.categories = res.data;
@@ -155,8 +158,60 @@ export default {
     },
     editCategory(id) {
       this.$router.push(`/admin/categories/${id}/edit`);
+    },
+    formatDateTime(dateTime) {
+      if (!dateTime) return 'N/A';
+      const date = new Date(dateTime);
+      return date.toLocaleString();
+    },
+
+    getDeviceInfo(userAgent) {
+      if (!userAgent) return 'Unknown';
+
+      // Simple parsing - you can make this more sophisticated
+      if (userAgent.includes('Chrome')) return 'Chrome Browser';
+      if (userAgent.includes('Firefox')) return 'Firefox Browser';
+      if (userAgent.includes('Safari')) return 'Safari Browser';
+      if (userAgent.includes('Edge')) return 'Edge Browser';
+      if (userAgent.includes('MSIE') || userAgent.includes('Trident')) return 'Internet Explorer';
+      return userAgent.substring(0, 50) + '...';
+    },
+
+    applyFilters() {
+      // Filter the logs based on the filter criteria
+      this.filteredLogs = this.logs.filter(log => {
+        // Email filter
+        if (this.filters.email && (!log.user || !log.user.email ||
+            !log.user.email.toLowerCase().includes(this.filters.email.toLowerCase()))) {
+          return false;
+        }
+
+        // Date filters
+        if (this.filters.startDate) {
+          const logDate = new Date(log.loginTime);
+          const startDate = new Date(this.filters.startDate);
+          if (logDate < startDate) return false;
+        }
+
+        if (this.filters.endDate) {
+          const logDate = new Date(log.loginTime);
+          const endDate = new Date(this.filters.endDate);
+          endDate.setHours(23, 59, 59); // End of day
+          if (logDate > endDate) return false;
+        }
+
+        // Status filter
+        if (this.filters.status !== '') {
+          const successStatus = this.filters.status === 'true';
+          if (log.success !== successStatus) return false;
+        }
+
+        return true;
+      });
     }
+
   },
+
   mounted() {
     this.fetchProducts();
     this.fetchLogs();
