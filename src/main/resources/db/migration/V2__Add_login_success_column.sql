@@ -1,0 +1,2 @@
+ALTER TABLE login_records
+    ADD COLUMN success BOOLEAN DEFAULT FALSE NOT NULL;

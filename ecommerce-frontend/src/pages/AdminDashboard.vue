@@ -2,7 +2,7 @@
   <div class="container page-container">
     <h2 class="neon-text">👨‍💼 Admin Dashboard</h2>
 
-    <!-- PRODUCTS -->
+    <!-- Products Section -->
     <section class="section">
       <h3>Manage Products</h3>
       <router-link to="/admin/products/new" class="btn btn-purple">
@@ -12,32 +12,33 @@
         <thead>
         <tr>
           <th>Name</th>
-          <th>Category</th>
+          <th>Description</th>
           <th>Price</th>
           <th>Stock</th>
+          <th>Category</th>
           <th>Actions</th>
         </tr>
         </thead>
         <tbody>
         <tr v-for="product in products" :key="product.id">
           <td>{{ product.name }}</td>
-          <td>{{ product.category.name }}</td>
-          <td>${{ product.price }}</td>
+          <td>{{ product.description }}</td>
+          <td>{{ product.price }}</td>
           <td>{{ product.stockQuantity }}</td>
+          <td>{{ product.category.name }}</td>
           <td>
-            <button class="btn btn-warning" @click="editProduct(product.id)">
-              Edit
-            </button>
-            <button class="btn btn-danger" @click="deleteProduct(product.id)">
-              Delete
-            </button>
+            <button @click="editProduct(product.id)" class="btn btn-blue">✏️ Edit</button>
+            <button @click="deleteProduct(product.id)" class="btn btn-red">🗑️ Delete</button>
           </td>
         </tr>
         </tbody>
       </table>
+      <div v-if="products.length === 0" class="no-results">
+        No products available
+      </div>
     </section>
 
-    <!-- CATEGORIES -->
+    <!-- Categories Section -->
     <section class="section">
       <h3>Manage Categories</h3>
       <router-link to="/admin/categories/new" class="btn btn-purple">
@@ -56,29 +57,58 @@
           <td>{{ category.name }}</td>
           <td>{{ category.description }}</td>
           <td>
-            <button class="btn btn-warning" @click="editCategory(category.id)">
-              Edit
-            </button>
-            <button class="btn btn-danger" @click="deleteCategory(category.id)">
-              Delete
-            </button>
+            <button @click="editCategory(category.id)" class="btn btn-blue">✏️ Edit</button>
+            <button @click="deleteCategory(category.id)" class="btn btn-red">🗑️ Delete</button>
           </td>
         </tr>
         </tbody>
       </table>
+      <div v-if="categories.length === 0" class="no-results">
+        No categories available
+      </div>
     </section>
 
-    <!-- LOGIN LOGS -->
+    <!-- Enhanced Login Logs Section -->
     <section class="section">
       <h3>User Login Logs</h3>
-      <ul class="log-list">
-        <li v-for="log in logs" :key="log.id">
-          {{ log.user.email }} -
-          {{ new Date(log.loginTime).toLocaleString() }} from {{ log.ipAddress }}
-        </li>
-      </ul>
+
+      <!-- Filters -->
+      <div class="dashboard-filters">
+        <!-- Email Filter -->
+        <input v-model="filters.email" placeholder="Search by email" class="filter-input" />
+
+        <!-- Date Filters -->
+        <div class="date-filters">
+          <input type="date" v-model="filters.startDate" class="filter-input" />
+          to
+          <input type="date" v-model="filters.endDate" class="filter-input" />
+        </div>
+
+        <!-- Status Filter -->
+        <select v-model="filters.status" class="filter-select">
+          <option value="">All Statuses</option>
+          <option value="true">Successful</option>
+          <option value="false">Failed</option>
+        </select>
+
+        <!-- Apply Filters Button -->
+        <button @click="applyFilters" class="filter-button">🔍 Apply Filters</button>
+      </div>
+
+      <!-- Logs Table -->
+      <div class="logs-container">
+        <table class="neon-table">
+          <!-- Table Header -->
+          <thead><tr><th>Email</th><th>IP Address</th><th>Login Time</th><th>Status</th><th>Device Info</th></tr></thead>
+
+          <!-- Table Body -->
+          <tbody><tr v-for='log in filteredLogs' :key='log.id'><td>{{ log.user?.email || 'Unknown' }}</td><td>{{ log.ipAddress }}</td><td>{{ formatDateTime(log.loginTime) }}</td><td :class="{ 'success-status': log.success, 'fail-status': !log.success }">{{ log.success ? '✅ Success' : '❌ Failed' }}</td><td>{{ getDeviceInfo(log.userAgent) }}</td></tr></tbody></table>
+
+        <div v-if='filteredLogs.length===0' class='no-results'>No matching login records found.</div>
+      </div>
     </section>
   </div>
+
 </template>
 
 <script>
@@ -89,7 +119,14 @@ export default {
     return {
       products: [],
       logs: [],
-      categories: []
+      categories: [],
+      filters: {
+        email: '', // Initialize email filter
+        startDate: null,
+        endDate: null,
+        status: ''
+      },
+      filteredLogs: [] // Initialize filteredLogs as an empty array
     };
   },
   methods: {
@@ -128,25 +165,3 @@ export default {
 };
 </script>
 
-<style scoped>
-.page-container {
-  padding-top: 80px;
-}
-
-.section {
-  margin-bottom: 40px;
-}
-
-.neon-table {
-  width: 100%;
-  margin: 20px auto;
-  border-collapse: collapse;
-}
-
-.neon-table th,
-.neon-table td {
-  padding: 12px;
-  text-align: center;
-  border: 1px solid var(--primary-color);
-}
-</style>
