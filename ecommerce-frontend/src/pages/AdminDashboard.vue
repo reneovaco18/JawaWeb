@@ -165,3 +165,218 @@ export default {
 };
 </script>
 
+<style>
+
+  /* General Layout */
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #121212;
+  color: #e0e0e0;
+  font-family: 'Roboto', sans-serif;
+}
+
+.neon-text {
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+  margin-bottom: 30px;
+}
+
+/* Sections */
+.section {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.section h3 {
+  color: #9c27b0;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+/* Buttons */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-right: 8px;
+  margin-bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-purple {
+  background-color: #9c27b0;
+  color: white;
+}
+
+.btn-purple:hover {
+  background-color: #7b1fa2;
+  box-shadow: 0 0 10px rgba(156, 39, 176, 0.5);
+}
+
+.btn-blue {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-blue:hover {
+  background-color: #1976d2;
+  box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+}
+
+.btn-red {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-red:hover {
+  background-color: #d32f2f;
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+}
+
+/* Tables */
+.neon-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.neon-table th {
+  background-color: #2d2d2d;
+  color: #00ffff;
+  text-align: left;
+  padding: 12px 15px;
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+.neon-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #333;
+}
+
+.neon-table tbody tr {
+  background-color: #1e1e1e;
+  transition: background-color 0.3s;
+}
+
+.neon-table tbody tr:hover {
+  background-color: #2a2a2a;
+}
+
+.neon-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Filter Section */
+.dashboard-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #2d2d2d;
+  border-radius: 8px;
+  align-items: center;
+}
+
+.filter-input, .filter-select {
+  padding: 8px 12px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  min-width: 200px;
+}
+
+.date-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-button {
+  background-color: #00bcd4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.filter-button:hover {
+  background-color: #00acc1;
+  box-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+}
+
+/* Status Indicators */
+.success-status {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.fail-status {
+  color: #f44336;
+  font-weight: 500;
+}
+
+/* No Results Message */
+.no-results {
+  text-align: center;
+  padding: 20px;
+  color: #90a4ae;
+  font-style: italic;
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+  .dashboard-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-input, .filter-select {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .date-filters {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .neon-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
+}
+
+
+</style>
