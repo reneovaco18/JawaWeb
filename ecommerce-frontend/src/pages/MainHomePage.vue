@@ -18,20 +18,11 @@
         <td>${{ product.price }}</td>
         <td>{{ product.stockQuantity }}</td>
         <td>
-          <router-link :to="'/product/' + product.id" class="btn btn-info">
-            Details
-          </router-link>
-          <button
-              class="btn btn-primary"
-              v-if="!isAuthenticated"
-              @click="promptLogin()"
-          >
-            Add to Cart
-          </button>
+          <router-link :to="'/product/' + product.id" class="btn btn-info">Details</router-link>
           <button
               class="btn btn-success"
               v-if="isAuthenticated"
-              @click="addToCart(product.id)"
+              @click="addProductToCart(product.id)"
           >
             Add to Cart
           </button>
@@ -43,8 +34,8 @@
 </template>
 
 <script>
-import api from '../services/api';
-import { mapState } from 'vuex';
+import { mapState, mapActions } from 'vuex';
+import api from "@/services/api";
 
 export default {
   data() {
@@ -59,6 +50,35 @@ export default {
     }
   },
   methods: {
+    ...mapActions(['addToCart']),actions: {
+      async addToCart({ commit, state }, { productId, quantity }) {
+        try {
+          // Call backend to add the product to the cart
+          const addedCartItem = await api.addToCart(productId, quantity);
+
+          // Update cart optimistically
+          const existingItemIndex = state.cart.findIndex(
+              item => item.product && item.product.id === productId // Add check for item.product existence
+          );
+
+          const updatedCart = [...state.cart];
+          if (existingItemIndex !== -1) {
+            // If the item already exists, update the quantity
+            updatedCart[existingItemIndex].quantity += quantity;
+          } else {
+            // If it's a new item, add it to the cart
+            updatedCart.push(addedCartItem);
+          }
+          commit('setCart', updatedCart);
+
+          // Centralized alert for success
+          alert('Product added to cart successfully!');
+        } catch (error) {
+          console.error('Error adding product to cart:', error);
+          alert('Failed to add product to cart. Please try again.');
+        }
+      }
+    },
     async fetchProducts() {
       try {
         const res = await api.getProducts();
@@ -67,18 +87,12 @@ export default {
         console.error('Error fetching products:', error);
       }
     },
-    async addToCart(productId) {
+    async addProductToCart(productId) {
       try {
-        await api.addToCart(productId, 1);
-        alert('Added to cart!');
+        await this.addToCart({ productId, quantity: 1 });
       } catch (error) {
-        console.error('Error adding to cart:', error);
-        alert('Failed to add product to cart.');
+        console.error('Error adding item to cart:', error);
       }
-    },
-    promptLogin() {
-      alert('Please log in to add items to your cart.');
-      this.$router.push('/login');
     }
   },
   mounted() {

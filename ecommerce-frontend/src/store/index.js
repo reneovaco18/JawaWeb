@@ -45,6 +45,28 @@ export default createStore({
         logout({ commit }) {
             commit('logout');
         },
+        async addToCart({ commit, state }, { productId, quantity }) {
+            try {
+                // Call backend to add to cart
+                const addedCartItem = await api.addToCart(productId, quantity);
+
+                // Update cart optimistically
+                const existingItemIndex = state.cart.findIndex(item => item.product.id === productId);
+                const updatedCart = [...state.cart];
+                if (existingItemIndex !== -1) {
+                    updatedCart[existingItemIndex].quantity += quantity; // Update quantity if item exists
+                } else {
+                    updatedCart.push(addedCartItem); // Add new item
+                }
+                commit('setCart', updatedCart);
+
+                // Centralized alert (avoids redundant component alerts)
+                alert('Product added to cart successfully!');
+            } catch (error) {
+                console.error('Error adding product to cart:', error);
+                alert('Failed to add product to cart. Please try again.');
+            }
+        },
         async fetchCart({ commit }) {
             try {
                 const res = await api.getCart();

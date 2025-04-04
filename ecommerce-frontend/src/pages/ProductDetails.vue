@@ -17,7 +17,7 @@
 
 <script>
 import api from '@/services/api';
-
+import { mapActions } from 'vuex';
 export default {
   data() {
     return {
@@ -30,26 +30,30 @@ export default {
     this.product = response.data;
   },
   methods: {
+    ...mapActions(['addToCart']),
+
     async addToCart() {
+      // Check if user is logged in
       if (!this.$store.state.token) {
-        alert('🔒 Please log in to add products to cart.');
-        this.$router.push('/login');
+        // Check if already on login page, avoid redirecting in a loop
+        if (this.$route.path !== '/login') {
+          alert('🔒 Please log in to add products to cart.');
+          this.$router.push('/login');  // Redirect to login page
+        }
         return;
       }
 
       try {
-        const quantity = 1;
-        await api.addToCart(this.product.id, quantity);
-        await this.$store.dispatch('fetchCart');
-
+        // Add to cart if logged in
+        await this.addToCart({ productId: this.product.id, quantity: 1 });
         alert('✅ Product added to cart!');
-        this.$router.push('/cart');
+        this.$router.push('/cart');  // Redirect to cart page
       } catch (error) {
         console.error('❌ Failed to add product to cart:', error);
-        alert('Failed to add product to cart.');
       }
     }
   }
+
 };
 </script>
 

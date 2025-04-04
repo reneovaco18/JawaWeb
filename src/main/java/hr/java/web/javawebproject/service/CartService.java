@@ -20,9 +20,17 @@ public class CartService {
 
     public List<CartItem> getCartItems(User user) {
         List<CartItem> items = cartRepo.findByUserId(user.getId());
-        items.forEach(item -> item.getProduct().getName()); // Force product initialization
+
+        // Initialize product details to avoid lazy loading issues
+        items.forEach(item -> {
+            if (item.getProduct() != null) {
+                item.getProduct().getName(); // Force initialization
+            }
+        });
+
         return items;
     }
+
 
     public CartItem addToCart(User user, Long productId, int quantity) {
         Product product = productRepo.findById(productId)

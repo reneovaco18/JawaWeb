@@ -1,6 +1,7 @@
 <template>
   <div class="container page-container">
     <h2 class="neon-text text-center">Your Cart</h2>
+
     <table v-if="cart.length > 0" class="neon-table">
       <thead>
       <tr>
@@ -23,7 +24,7 @@
               type="number"
               v-model.number="item.quantity"
               min="1"
-              :max="item.product?.stockQuantity || 0"
+              max="item.product?.stockQuantity || 0"
               @change="updateQuantity(item)"
               class="quantity-input"
           />
@@ -40,51 +41,99 @@
     </table>
 
     <div v-if="cart.length === 0" class="empty-cart">
-      <p class="text-center">Your cart is empty</p>
+      <p class="text-center">Your cart is empty!</p>
     </div>
 
     <div v-else class="checkout-section">
       <h4 class="text-center">Total: ${{ cartTotal }}</h4>
       <div class="text-center">
-        <button class="btn btn-primary" @click="checkout">
-          Proceed to Checkout
-        </button>
+        <button class="btn btn-primary" @click="checkout">Proceed to Checkout</button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import api from '@/services/api';
-import { mapState, mapActions } from 'vuex';
+import { debounce } from "lodash"; // Import lodash for debouncing
+import { mapState, mapActions } from "vuex";
 
 export default {
   computed: {
-    ...mapState(['cart']),
+    ...mapState(["cart"]),
     cartTotal() {
-      return this.cart.reduce((sum, item) => {
-        const price = item.product?.price || 0;
-        return sum + (price * item.quantity);
-      }, 0).toFixed(2);
-    }
+      // Dynamically calculate the total cart value
+      return this.cart
+          .reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0)
+          .toFixed(2);
+    },
   },
   methods: {
-    async updateQuantity(item) {
-      if (item.quantity > 0) {
-        await api.addToCart(item.product?.id, item.quantity);
-        this.fetchCart();
+    ...mapActions(["fetchCart", "addToCart", "removeFromCart"]), // Map Vuex actions
+
+    // Update quantity with debounce to prevent fast, repeated triggers
+    updateQuantity: debounce(async function (item) {
+      if (item.quantity <= 0) {
+        item.quantity = 1; // Reset invalid quantity
+        alert("Quantity cannot be less than 1.");
+        return;
       }
-    },
+
+      try {
+        await this.addToCart({ productId: item.product.id, quantity: item.quantity });
+      } catch (error) {
+        console.error("Error updating quantity:", error);
+        alert("Failed to update item quantity. Try again.");
+      }
+    }, 300),
+
     async removeItem(productId) {
-      if (productId) {
-        await api.removeFromCart(productId);
-        this.fetchCart();
+      try {
+        if (productId) {
+          await this.removeFromCart({ productId }); // Call Vuex action to remove item
+          alert("Item removed successfully.");
+        }
+      } catch (error) {
+        console.error("Error removing item:", error);
+        alert("Failed to remove product from cart.");
       }
     },
-    ...mapActions(['fetchCart'])
+
+    async checkout() {
+      alert("Proceeding to checkout...");
+      // Add your checkout logic here
+    },
   },
-  mounted() {
-    this.fetchCart();
-  }
+  async mounted() {
+    try {
+      await this.fetchCart(); // Fetch cart items when component mounts
+    } catch (error) {
+      console.error("Failed to load cart:", error);
+    }
+  },
 };
 </script>
+
+<style scoped>
+/* Scoped styles for ShoppingCart.vue */
+.container {
+  padding: 20px;
+}
+
+.neon-text {
+  color: #00ffcc;
+}
+
+.neon-table th,
+.neon-table td {
+  text-align: center;
+}
+
+.empty-cart p {
+  font-size: larger;
+}
+
+.checkout-section h4,
+.checkout-section button {
+  margin-top: 20px;
+}
+</style>

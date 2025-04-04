@@ -20,8 +20,14 @@ public class CartController {
     @GetMapping
     public ResponseEntity<List<CartItem>> getCart(Authentication auth) {
         User user = userService.getByEmail(auth.getName());
-        return ResponseEntity.ok(cartService.getCartItems(user));
+        List<CartItem> cartItems = cartService.getCartItems(user);
+
+        // Ensure products are fully initialized
+        cartItems.forEach(item -> item.getProduct().getName());
+
+        return ResponseEntity.ok(cartItems);
     }
+
 
     @PostMapping
     public ResponseEntity<CartItem> addToCart(
@@ -30,7 +36,9 @@ public class CartController {
             @RequestParam int quantity
     ) {
         User user = userService.getByEmail(auth.getName());
-        return ResponseEntity.ok(cartService.addToCart(user, productId, quantity));
+        CartItem updatedCartItem = cartService.addToCart(user, productId, quantity);
+
+        return ResponseEntity.ok(updatedCartItem);
     }
 
     @DeleteMapping("/{productId}")
