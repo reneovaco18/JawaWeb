@@ -2,6 +2,7 @@ package hr.java.web.javawebproject.model;
 
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 
@@ -18,6 +19,7 @@ public class Cart {
     // Owning side of One-to-One with User
     @OneToOne
     @JoinColumn(name = "user_id")  // each cart is linked to a user
+    @JsonIgnore
     private User user;
 
     // Many-to-Many with Product

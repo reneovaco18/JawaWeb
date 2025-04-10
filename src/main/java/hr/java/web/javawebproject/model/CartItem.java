@@ -2,6 +2,7 @@ package hr.java.web.javawebproject.model;
 
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import jakarta.persistence.*;
 
@@ -20,6 +21,7 @@ public class CartItem {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     @ManyToOne(optional = false)
