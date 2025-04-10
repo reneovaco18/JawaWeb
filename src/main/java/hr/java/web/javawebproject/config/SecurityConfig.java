@@ -34,6 +34,8 @@ public class SecurityConfig {
     }
 
     @Bean
+    // In your SecurityConfig securityFilterChain method:
+
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -43,6 +45,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/products/**", "/api/categories/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()  // Allow static access to uploaded images
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/cart/**", "/api/orders/**").authenticated()
                         .anyRequest().authenticated()
@@ -51,6 +54,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {

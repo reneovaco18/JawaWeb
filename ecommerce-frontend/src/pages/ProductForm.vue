@@ -32,6 +32,15 @@
         </select>
       </div>
 
+      <!-- Only show the upload if editing an existing product (that we have an ID for) -->
+      <div class="mb-3" v-if="isEditMode">
+        <label>Upload Product Image</label>
+        <input type="file" @change="handleFileChange" />
+        <button type="button" class="btn btn-purple" @click="uploadImage">
+          Upload
+        </button>
+      </div>
+
       <button type="submit" class="btn btn-purple">
         {{ isEditMode ? 'Update' : 'Create' }}
       </button>
@@ -53,7 +62,8 @@ export default {
         category: {}
       },
       categories: [],
-      selectedCategoryId: null
+      selectedCategoryId: null,
+      selectedFile: null // We'll store the file here
     };
   },
   computed: {
@@ -72,10 +82,11 @@ export default {
       this.selectedCategoryId = res.data.category.id;
     },
     async handleSubmit() {
+      // Build the DTO
       const dto = {
         name: this.product.name,
         description: this.product.description,
-        price: parseFloat(this.product.price), // ensure it's a number
+        price: parseFloat(this.product.price),
         stockQuantity: parseInt(this.product.stockQuantity),
         categoryId: this.selectedCategoryId
       };
@@ -83,20 +94,43 @@ export default {
       if (this.isEditMode) {
         await api.updateProduct(this.$route.params.id, dto);
       } else {
+        // Create new product
         await api.createProduct(dto);
       }
 
+      // Navigate back to admin
       this.$router.push('/admin');
-    }
+    },
+    handleFileChange(e) {
+      this.selectedFile = e.target.files[0];
+    },
+    async uploadImage() {
+      if (!this.selectedFile) {
+        alert('No file selected.');
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('file', this.selectedFile);
 
+        // Upload to /products/:id/uploadImage
+        const res = await api.uploadProductImage(this.$route.params.id, formData);
+        this.product = res.data;
+        alert('Image uploaded successfully!');
+      } catch (err) {
+        console.error('Failed to upload image', err);
+        alert('Image upload failed!');
+      }
+    }
   },
   async mounted() {
     await this.fetchCategories();
-    if (this.isEditMode) await this.fetchProduct();
+    if (this.isEditMode) {
+      await this.fetchProduct();
+    }
   }
 };
 </script>
-
 
 <style scoped>
 .page-container {

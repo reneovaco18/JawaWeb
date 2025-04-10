@@ -413,25 +413,5 @@ export default {
   .filter-input, .filter-select {
     width: 100%;
     min-width: auto;
-  }
-
-  .date-filters {
-    flex-direction: column;
-    width: 100%;
-  }
-}
-
-@media (max-width: 768px) {
-  .neon-table {
-    display: block;
-    overflow-x: auto;
-  }
-
-  .btn {
-    padding: 6px 12px;
-    font-size: 0.9rem;
-  }
-}
-
-
+  }}
 </style>

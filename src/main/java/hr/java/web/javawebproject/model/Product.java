@@ -30,7 +30,8 @@ public class Product {
 
     // In case you want to track stock
     private Integer stockQuantity;
-
+    // ↓ NEW FIELD for storing the URL of the image
+    private String image;  // or imageUrl
     @ManyToOne(optional = false)
     @JoinColumn(name = "category_id")
     private Category category;
