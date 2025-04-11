@@ -30,7 +30,9 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public Order getOne(Authentication auth, @PathVariable Long orderId) {
         Order order = orderService.getOrder(orderId);
-        if (!order.getUser().getId().equals(userService.getByEmail(auth.getName()).getId())) {
+        // Allow access if the user owns the order or if the user is admin.
+        if (!order.getUser().getId().equals(userService.getByEmail(auth.getName()).getId()) &&
+                !userService.getByEmail(auth.getName()).getRole().equalsIgnoreCase("ADMIN")) {
             throw new org.springframework.security.access.AccessDeniedException("You don't own this order");
         }
         return order;

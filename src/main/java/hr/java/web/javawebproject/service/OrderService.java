@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -25,15 +24,35 @@ public class OrderService {
     private final CartItemRepository cartRepo;
     private final OrderRepository orderRepo;
     private final ProductRepository productRepo;
-    private final PayPalPaymentService payPalPaymentService;
+    private final PayPalPaymentService payPalPaymentService; // still used in other flows if needed
 
     /**
-     * Places an order for the specified user using the provided payment method.
-     * For "PAYPAL", a PayPal order is created and captured.
-     * The product stock is updated (decremented) based on the ordered quantity.
+     * Compute the total for the current user's cart.
+     */
+    public BigDecimal computeCartTotal(User user) {
+        List<CartItem> cartItems = cartRepo.findByUserId(user.getId());
+        if (cartItems.isEmpty()) {
+            throw new ResourceNotFoundException("Cart is empty");
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (CartItem ci : cartItems) {
+            Product p = ci.getProduct();
+            total = total.add(p.getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())));
+        }
+        return total;
+    }
+
+    /**
+     * This method is used in the normal checkout process (e.g., Cash on Delivery).
+     * It creates the order immediately.
      */
     @Transactional
     public Order placeOrder(User user, String paymentMethod) {
+        if ("PAYPAL".equalsIgnoreCase(paymentMethod)) {
+            // For PayPal orders, we now use a two-step process.
+            // Direct placement in this endpoint for PayPal is not used.
+            throw new UnsupportedOperationException("Use PayPal endpoints for PayPal orders");
+        }
         List<CartItem> cartItems = cartRepo.findByUserId(user.getId());
         if (cartItems.isEmpty()) {
             throw new ResourceNotFoundException("Cart is empty");
@@ -53,6 +72,7 @@ public class OrderService {
             if (p.getStockQuantity() < quantity) {
                 throw new ResourceNotFoundException("Insufficient stock for product: " + p.getName());
             }
+            // Reduce product stock immediately
             p.setStockQuantity(p.getStockQuantity() - quantity);
             productRepo.save(p);
 
@@ -68,16 +88,6 @@ public class OrderService {
                     .build();
             order.getItems().add(oi);
         }
-
-        if ("PAYPAL".equalsIgnoreCase(paymentMethod)) {
-            Map<String, Object> createResponse = payPalPaymentService.createOrder(total, "USD");
-            if (createResponse != null && createResponse.containsKey("id")) {
-                String payPalOrderId = (String) createResponse.get("id");
-                Map<String, Object> captureResponse = payPalPaymentService.captureOrder(payPalOrderId);
-                // Optionally, store details from captureResponse if required.
-            }
-        }
-
         order.setTotal(total);
         Order savedOrder = orderRepo.save(order);
         cartRepo.deleteAll(cartItems);
@@ -85,9 +95,62 @@ public class OrderService {
     }
 
     /**
+     * Finalize a PayPal order.
+     * This method is called after a successful PayPal capture and will create the Order,
+     * reduce stock, and clear the user’s cart.
+     */
+    @Transactional
+    public Order finalizePayPalOrder(User user) {
+        List<CartItem> cartItems = cartRepo.findByUserId(user.getId());
+        if (cartItems.isEmpty()) {
+            throw new ResourceNotFoundException("Cart is empty");
+        }
+
+        Order order = Order.builder()
+                .user(user)
+                .orderDate(LocalDateTime.now())
+                .paymentMethod("PAYPAL")
+                .build();
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (CartItem ci : cartItems) {
+            Product p = ci.getProduct();
+            int quantity = ci.getQuantity();
+
+            if (p.getStockQuantity() < quantity) {
+                throw new ResourceNotFoundException("Insufficient stock for product: " + p.getName());
+            }
+            // Reduce product stock after successful PayPal capture
+            p.setStockQuantity(p.getStockQuantity() - quantity);
+            productRepo.save(p);
+
+            BigDecimal itemPrice = p.getPrice();
+            BigDecimal lineTotal = itemPrice.multiply(BigDecimal.valueOf(quantity));
+            total = total.add(lineTotal);
+
+            OrderItem oi = OrderItem.builder()
+                    .order(order)
+                    .product(p)
+                    .price(itemPrice)
+                    .quantity(quantity)
+                    .build();
+            order.getItems().add(oi);
+        }
+        order.setTotal(total);
+        Order savedOrder = orderRepo.save(order);
+        // Clear the cart for the user.
+        cartRepo.deleteAll(cartItems);
+        return savedOrder;
+    }
+
+    /**
      * Returns orders for a given user.
+     * For an admin user, this returns all orders from all users.
      */
     public List<Order> getUserOrders(User user) {
+        if (user.getRole().equalsIgnoreCase("ADMIN")) {
+            return orderRepo.findAll();
+        }
         return orderRepo.findByUserId(user.getId());
     }
 

@@ -1,3 +1,4 @@
+<!-- src/pages/OrderDetails.vue -->
 <template>
   <div class="container page-container">
     <h2>Order #{{ orderId }}</h2>
@@ -19,6 +20,7 @@
 <script>
 import api from '@/services/api';
 import dayjs from 'dayjs';
+
 export default {
   data() {
     return {
@@ -46,3 +48,7 @@ export default {
   }
 };
 </script>
+
+<style scoped>
+/* Additional styling if needed */
+</style>

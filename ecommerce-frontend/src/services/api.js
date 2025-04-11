@@ -1,8 +1,9 @@
+// src/services/api.js
 import axios from 'axios';
 import store from '@/store';
 
 const apiClient = axios.create({
-    baseURL: 'http://localhost:8085/api', // or your domain
+    baseURL: 'http://localhost:8085/api', // Change to your actual API host if needed
     headers: {
         'Content-Type': 'application/json',
     },
@@ -18,7 +19,7 @@ apiClient.interceptors.request.use(config => {
     return config;
 });
 
-// Handle 403 errors
+// Handle 403 errors (session expiry)
 apiClient.interceptors.response.use(
     response => response,
     error => {
@@ -56,7 +57,7 @@ export default {
         return apiClient.delete(`/categories/${id}`);
     },
 
-    // Auth
+    // Auth API
     register(userData) {
         return apiClient.post('/auth/register', userData);
     },
@@ -64,7 +65,6 @@ export default {
         return apiClient.post('/auth/login', credentials);
     },
 
-    // Cart
     // Cart API
     getCart() {
         return apiClient.get('/cart');
@@ -75,28 +75,27 @@ export default {
     updateCartItem(productId, quantity) {
         return apiClient.put(`/cart?productId=${productId}&quantity=${quantity}`);
     },
-    getOrder(orderId) {
-        return apiClient.get(`/orders/${orderId}`);
-    },
-
     removeFromCart(productId) {
         return apiClient.delete(`/cart/${productId}`);
     },
 
-    // Orders
+    // Orders API
     getOrders() {
         return apiClient.get('/orders');
+    },
+    getOrder(orderId) {
+        return apiClient.get(`/orders/${orderId}`);
     },
     placeOrder(paymentMethod) {
         return apiClient.post(`/orders?paymentMethod=${paymentMethod}`);
     },
 
-    // Admin logs
+    // Admin Logs API
     getLoginLogs() {
         return apiClient.get('/admin/logins');
     },
 
-    // Product Management
+    // Product Management API
     deleteProduct(id) {
         return apiClient.delete(`/products/${id}`);
     },
@@ -107,9 +106,8 @@ export default {
         return apiClient.put(`/products/${id}`, productData);
     },
 
-    // ** New: Upload product image **
+    // New: Upload product image (multipart/form-data)
     uploadProductImage(productId, formData) {
-        // Must send multipart/form-data
         return apiClient.post(`/products/${productId}/uploadImage`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'

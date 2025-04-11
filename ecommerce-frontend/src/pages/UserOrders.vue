@@ -1,3 +1,4 @@
+<!-- src/pages/UserOrders.vue -->
 <template>
   <div class="container page-container">
     <h2 class="neon-text text-center">🛒 Order History</h2>
@@ -27,8 +28,9 @@
 </template>
 
 <script>
-import api from '../services/api';
+import api from '@/services/api';
 import dayjs from 'dayjs';
+
 export default {
   data() {
     return {

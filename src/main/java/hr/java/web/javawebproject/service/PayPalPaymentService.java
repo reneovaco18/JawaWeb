@@ -14,12 +14,9 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-/**
- * Service for integrating with PayPal's Sandbox environment.
- * Uses WebClient to obtain an OAuth2 token, create orders, and capture them.
- */
 @Service
 @Slf4j
 public class PayPalPaymentService {
@@ -78,43 +75,54 @@ public class PayPalPaymentService {
     /**
      * Create a PayPal order in sandbox.
      *
-     * @param totalAmount The total order amount
-     * @param currency    The currency code (e.g., "USD")
-     * @return A Map containing the PayPal order details
+     * @param totalAmount The total order amount.
+     * @param currency    The currency code (e.g., "USD").
+     * @return A Map containing the PayPal order details, including the approval URL.
      */
     public Map<String, Object> createOrder(BigDecimal totalAmount, String currency) {
         try {
             Map<String, Object> orderRequest = new HashMap<>();
             orderRequest.put("intent", "CAPTURE");
 
-            // Build the purchase_units
+            // Build the purchase_units object
             Map<String, Object> purchaseUnit = new HashMap<>();
             Map<String, String> amount = new HashMap<>();
             amount.put("currency_code", currency);
             amount.put("value", totalAmount.toString());
             purchaseUnit.put("amount", amount);
 
-            // If you have multiple purchase units, you can add them to a list
             orderRequest.put("purchase_units", new Object[]{purchaseUnit});
 
-            return webClient.post()
+            Map<String, Object> response = webClient.post()
                     .uri("/v2/checkout/orders")
                     .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                     .bodyValue(orderRequest)
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
+
+            // Extract the approval URL from the "links" array in the response
+            if (response != null && response.containsKey("links")) {
+                List<Map<String, Object>> links = (List<Map<String, Object>>) response.get("links");
+                for (Map<String, Object> link : links) {
+                    if ("approve".equals(link.get("rel"))) {
+                        response.put("approvalUrl", link.get("href"));
+                        break;
+                    }
+                }
+            }
+            return response;
         } catch (Exception ex) {
             log.error("Failed to create PayPal order", ex);
-            throw new RuntimeException("Unable to create PayPal order at this time");
+            throw new RuntimeException("Unable to create PayPal order at this time", ex);
         }
     }
 
     /**
-     * Capture a PayPal order once the user has approved it.
+     * Capture a PayPal order once the buyer has approved it.
      *
-     * @param orderId The ID of the PayPal order
-     * @return A Map containing the capture result
+     * @param orderId The ID of the PayPal order.
+     * @return A Map containing the capture result.
      */
     public Map<String, Object> captureOrder(String orderId) {
         try {
@@ -126,7 +134,7 @@ public class PayPalPaymentService {
                     .block();
         } catch (Exception ex) {
             log.error("Failed to capture PayPal order: {}", orderId, ex);
-            throw new RuntimeException("Unable to capture PayPal order at this time");
+            throw new RuntimeException("Unable to capture PayPal order at this time", ex);
         }
     }
 }

@@ -1,9 +1,10 @@
+// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import store from '@/store';
 import LoginPage from '@/pages/LoginPage.vue';
 import AdminDashboard from '@/pages/AdminDashboard.vue';
 import ShoppingCart from '@/pages/ShoppingCart.vue';
-import MainHomePage from '@/pages/MainHomePage.vue'; // Home shows product list
+import MainHomePage from '@/pages/MainHomePage.vue';
 import RegisterPage from '@/pages/RegisterPage.vue';
 import ProductDetails from '@/pages/ProductDetails.vue';
 import OrderHistory from '@/pages/UserOrders.vue';
@@ -29,7 +30,6 @@ const routes = [
     { path: '/admin/products/new', component: ProductForm, meta: { requiresAuth: true, isAdmin: true } },
     { path: '/admin/categories/new', component: () => import('@/pages/CategoryForm.vue'), meta: { requiresAuth: true, isAdmin: true } },
     { path: '/admin/categories/:id/edit', component: () => import('@/pages/CategoryForm.vue'), meta: { requiresAuth: true, isAdmin: true } },
-
     { path: '/admin/products/:id/edit', component: ProductForm, meta: { requiresAuth: true, isAdmin: true } }
 ];
 
