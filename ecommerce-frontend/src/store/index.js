@@ -1,5 +1,5 @@
-import { createStore } from 'vuex';
 import api from '@/services/api';
+import { createStore } from 'vuex';
 
 export default createStore({
     state: {
@@ -45,26 +45,44 @@ export default createStore({
         logout({ commit }) {
             commit('logout');
         },
-        async addToCart({ commit, state }, { productId, quantity }) {
+        async addToCart({ state }, { productId, quantity }) {
             try {
-                // Call backend to add to cart
-                const addedCartItem = await api.addToCart(productId, quantity);
-
-                // Update cart optimistically
-                const existingItemIndex = state.cart.findIndex(item => item.product.id === productId);
-                const updatedCart = [...state.cart];
-                if (existingItemIndex !== -1) {
-                    updatedCart[existingItemIndex].quantity += quantity; // Update quantity if item exists
+                const response = await api.addToCart(productId, quantity);
+                // Either update the existing item or add the new one
+                const index = state.cart.findIndex(item => item.product.id === productId);
+                if (index !== -1) {
+                    state.cart[index].quantity = response.data.quantity;
                 } else {
-                    updatedCart.push(addedCartItem); // Add new item
+                    state.cart.push(response.data);
                 }
-                commit('setCart', updatedCart);
-
-                // Centralized alert (avoids redundant component alerts)
                 alert('Product added to cart successfully!');
             } catch (error) {
                 console.error('Error adding product to cart:', error);
                 alert('Failed to add product to cart. Please try again.');
+            }
+        },
+        async updateCartItem({ state }, { productId, quantity }) {
+            try {
+                const response = await api.updateCartItem(productId, quantity);
+                const index = state.cart.findIndex(item => item.product.id === productId);
+                if (index !== -1) {
+                    state.cart[index] = response.data;
+                }
+                alert('Cart updated successfully!');
+            } catch (error) {
+                console.error('Error updating cart item:', error);
+                alert('Failed to update product quantity. Please try again.');
+            }
+        },
+        async removeFromCart({ commit, state }, { productId }) {
+            try {
+                await api.removeFromCart(productId);
+                const updatedCart = state.cart.filter(item => item.product.id !== productId);
+                commit('setCart', updatedCart);
+                alert('Product removed from cart successfully!');
+            } catch (error) {
+                console.error('Error removing product from cart:', error);
+                alert('Failed to remove product from cart.');
             }
         },
         async fetchCart({ commit }) {

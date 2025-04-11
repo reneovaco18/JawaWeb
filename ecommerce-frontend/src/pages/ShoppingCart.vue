@@ -23,8 +23,8 @@
           <input
               type="number"
               v-model.number="item.quantity"
-              min="1"
-              max="item.product?.stockQuantity || 0"
+              :min="1"
+              :max="item.product?.stockQuantity || 0"
               @change="updateQuantity(item)"
               class="quantity-input"
           />
@@ -54,58 +54,50 @@
 </template>
 
 <script>
-import { debounce } from "lodash"; // Import lodash for debouncing
+import { debounce } from "lodash";
 import { mapState, mapActions } from "vuex";
 
 export default {
   computed: {
     ...mapState(["cart"]),
     cartTotal() {
-      // Dynamically calculate the total cart value
       return this.cart
           .reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0)
           .toFixed(2);
     },
   },
   methods: {
-    ...mapActions(["fetchCart", "addToCart", "removeFromCart"]), // Map Vuex actions
-
-    // Update quantity with debounce to prevent fast, repeated triggers
+    ...mapActions(["fetchCart", "addToCart", "updateCartItem", "removeFromCart"]),
     updateQuantity: debounce(async function (item) {
       if (item.quantity <= 0) {
-        item.quantity = 1; // Reset invalid quantity
+        item.quantity = 1;
         alert("Quantity cannot be less than 1.");
         return;
       }
-
+      // Enforce maximum quantity according to product stock
+      if (item.product.stockQuantity && item.quantity > item.product.stockQuantity) {
+        item.quantity = item.product.stockQuantity;
+        alert("Quantity cannot exceed available stock.");
+        return;
+      }
       try {
-        await this.addToCart({ productId: item.product.id, quantity: item.quantity });
+        await this.updateCartItem({ productId: item.product.id, quantity: item.quantity });
       } catch (error) {
         console.error("Error updating quantity:", error);
         alert("Failed to update item quantity. Try again.");
       }
     }, 300),
-
-    async removeItem(productId) {
-      try {
-        if (productId) {
-          await this.removeFromCart({ productId }); // Call Vuex action to remove item
-          alert("Item removed successfully.");
-        }
-      } catch (error) {
-        console.error("Error removing item:", error);
-        alert("Failed to remove product from cart.");
-      }
+    removeItem(productId) {
+      this.removeFromCart({ productId });
     },
-
-    async checkout() {
+    checkout() {
       alert("Proceeding to checkout...");
-      // Add your checkout logic here
+      // Add checkout logic here
     },
   },
   async mounted() {
     try {
-      await this.fetchCart(); // Fetch cart items when component mounts
+      await this.fetchCart();
     } catch (error) {
       console.error("Failed to load cart:", error);
     }
@@ -114,7 +106,7 @@ export default {
 </script>
 
 <style scoped>
-/* Scoped styles for ShoppingCart.vue */
+/* Your scoped styles (unchanged) */
 .container {
   padding: 20px;
 }

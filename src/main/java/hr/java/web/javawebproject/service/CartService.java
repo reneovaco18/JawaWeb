@@ -1,5 +1,6 @@
 package hr.java.web.javawebproject.service;
 
+import hr.java.web.javawebproject.exception.BadRequestException;
 import hr.java.web.javawebproject.exception.ResourceNotFoundException;
 import hr.java.web.javawebproject.model.CartItem;
 import hr.java.web.javawebproject.model.Product;
@@ -8,7 +9,6 @@ import hr.java.web.javawebproject.repositories.CartItemRepository;
 import hr.java.web.javawebproject.repositories.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
@@ -20,46 +20,62 @@ public class CartService {
 
     public List<CartItem> getCartItems(User user) {
         List<CartItem> items = cartRepo.findByUserId(user.getId());
-
-        // Initialize product details to avoid lazy loading issues
+        // Force product initialization to avoid lazy loading issues.
         items.forEach(item -> {
             if (item.getProduct() != null) {
-                item.getProduct().getName(); // Force initialization
+                item.getProduct().getName();
             }
         });
-
         return items;
     }
 
-
+    // Add to cart: If the item exists, increase quantity (provided the new total does not exceed stock).
     public CartItem addToCart(User user, Long productId, int quantity) {
         Product product = productRepo.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        return cartRepo.findByUserId(user.getId()).stream()
-                .filter(ci -> ci.getProduct().getId().equals(productId))
-                .findFirst()
-                .map(existingItem -> {
-                    existingItem.setQuantity(existingItem.getQuantity() + quantity);
-                    return cartRepo.save(existingItem);
-                })
-                .orElseGet(() -> cartRepo.save(CartItem.builder()
-                        .user(user)
-                        .product(product)
-                        .quantity(quantity)
-                        .build()));
-    }
-
-    public CartItem updateCartItem(User user, Long productId, int quantity) {
         if (quantity <= 0) {
-            removeCartItem(user, productId);
-            return null;
+            throw new IllegalArgumentException("Quantity must be at least 1");
         }
 
+        CartItem existingItem = cartRepo.findByUserId(user.getId())
+                .stream()
+                .filter(ci -> ci.getProduct().getId().equals(productId))
+                .findFirst()
+                .orElse(null);
+
+        if (existingItem != null) {
+            int newQuantity = existingItem.getQuantity() + quantity;
+            if (newQuantity > product.getStockQuantity()) {
+                throw new BadRequestException("Requested quantity exceeds available stock");
+            }
+            existingItem.setQuantity(newQuantity);
+            return cartRepo.save(existingItem);
+        } else {
+            if (quantity > product.getStockQuantity()) {
+                throw new BadRequestException("Requested quantity exceeds available stock");
+            }
+            CartItem newItem = CartItem.builder()
+                    .user(user)
+                    .product(product)
+                    .quantity(quantity)
+                    .build();
+            return cartRepo.save(newItem);
+        }
+    }
+
+    // Update the quantity of an existing cart item (validate against stock)
+    public CartItem updateCartItem(User user, Long productId, int quantity) {
         CartItem item = cartRepo.findByUserId(user.getId()).stream()
                 .filter(ci -> ci.getProduct().getId().equals(productId))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found in cart"));
+
+        Product product = item.getProduct();
+        if (quantity > product.getStockQuantity()) {
+            throw new BadRequestException("Requested quantity exceeds available stock");
+        }
+
         item.setQuantity(quantity);
         return cartRepo.save(item);
     }

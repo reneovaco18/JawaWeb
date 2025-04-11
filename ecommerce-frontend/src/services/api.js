@@ -65,11 +65,15 @@ export default {
     },
 
     // Cart
+    // Cart API
     getCart() {
         return apiClient.get('/cart');
     },
     addToCart(productId, quantity) {
         return apiClient.post(`/cart?productId=${productId}&quantity=${quantity}`);
+    },
+    updateCartItem(productId, quantity) {
+        return apiClient.put(`/cart?productId=${productId}&quantity=${quantity}`);
     },
     removeFromCart(productId) {
         return apiClient.delete(`/cart/${productId}`);
