@@ -9,7 +9,7 @@
           Price:
           <span class="highlight">{{ product.price }}$</span>
         </p>
-        <button class="btn" @click="addToCart">Add to Cart</button>
+
       </div>
     </div>
   </div>
@@ -32,26 +32,8 @@ export default {
   methods: {
     ...mapActions(['addToCart']),
 
-    async addToCart() {
-      // Check if user is logged in
-      if (!this.$store.state.token) {
-        // Check if already on login page, avoid redirecting in a loop
-        if (this.$route.path !== '/login') {
-          alert('🔒 Please log in to add products to cart.');
-          this.$router.push('/login');  // Redirect to login page
-        }
-        return;
-      }
 
-      try {
-        // Add to cart if logged in
-        await this.addToCart({ productId: this.product.id, quantity: 1 });
-        alert('✅ Product added to cart!');
-        this.$router.push('/cart');  // Redirect to cart page
-      } catch (error) {
-        console.error('❌ Failed to add product to cart:', error);
-      }
-    }
+
   }
 
 };

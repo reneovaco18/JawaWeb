@@ -131,7 +131,9 @@ public class ProductController {
 
             // Construct a URL that can be used to access the file.
             // This assumes that you have configured static resource mapping for the UPLOAD_DIR.
-            String publicUrl = "/uploads/" + filename;
+            String publicUrl = "http://localhost:8085/uploads/" + filename;
+
+
 
             // Save the file URL in the product record
             product.setImage(publicUrl);
