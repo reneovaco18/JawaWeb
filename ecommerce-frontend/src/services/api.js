@@ -75,6 +75,10 @@ export default {
     updateCartItem(productId, quantity) {
         return apiClient.put(`/cart?productId=${productId}&quantity=${quantity}`);
     },
+    getOrder(orderId) {
+        return apiClient.get(`/orders/${orderId}`);
+    },
+
     removeFromCart(productId) {
         return apiClient.delete(`/cart/${productId}`);
     },

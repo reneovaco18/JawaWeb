@@ -11,6 +11,7 @@ import Profile from '@/pages/UserProfile.vue';
 import CategoriesPage from '@/pages/CategoriesPage.vue';
 import CategoryProducts from '@/pages/CategoryProducts.vue';
 import ProductForm from '@/pages/ProductForm.vue';
+import OrderDetails from "@/pages/OrderDetails.vue";
 
 const routes = [
     { path: '/', component: MainHomePage },
@@ -23,6 +24,8 @@ const routes = [
     { path: '/profile', component: Profile, meta: { requiresAuth: true } },
     { path: '/categories', component: CategoriesPage },
     { path: '/category/:id', component: CategoryProducts },
+    { path: '/order/:orderId', component: OrderDetails },
+
     { path: '/admin/products/new', component: ProductForm, meta: { requiresAuth: true, isAdmin: true } },
     { path: '/admin/categories/new', component: () => import('@/pages/CategoryForm.vue'), meta: { requiresAuth: true, isAdmin: true } },
     { path: '/admin/categories/:id/edit', component: () => import('@/pages/CategoryForm.vue'), meta: { requiresAuth: true, isAdmin: true } },

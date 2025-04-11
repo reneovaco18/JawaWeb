@@ -8,6 +8,7 @@ import hr.java.web.javawebproject.model.Product;
 import hr.java.web.javawebproject.model.User;
 import hr.java.web.javawebproject.repositories.CartItemRepository;
 import hr.java.web.javawebproject.repositories.OrderRepository;
+import hr.java.web.javawebproject.repositories.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +24,13 @@ public class OrderService {
 
     private final CartItemRepository cartRepo;
     private final OrderRepository orderRepo;
-    private final PayPalPaymentService payPalPaymentService; // Injected PayPal service
+    private final ProductRepository productRepo;
+    private final PayPalPaymentService payPalPaymentService;
 
     /**
-     * Places an order. If the payment method is "PAYPAL", it calls the PayPal service.
+     * Places an order for the specified user using the provided payment method.
+     * For "PAYPAL", a PayPal order is created and captured.
+     * The product stock is updated (decremented) based on the ordered quantity.
      */
     @Transactional
     public Order placeOrder(User user, String paymentMethod) {
@@ -44,8 +48,15 @@ public class OrderService {
         BigDecimal total = BigDecimal.ZERO;
         for (CartItem ci : cartItems) {
             Product p = ci.getProduct();
-            BigDecimal itemPrice = p.getPrice();
             int quantity = ci.getQuantity();
+
+            if (p.getStockQuantity() < quantity) {
+                throw new ResourceNotFoundException("Insufficient stock for product: " + p.getName());
+            }
+            p.setStockQuantity(p.getStockQuantity() - quantity);
+            productRepo.save(p);
+
+            BigDecimal itemPrice = p.getPrice();
             BigDecimal lineTotal = itemPrice.multiply(BigDecimal.valueOf(quantity));
             total = total.add(lineTotal);
 
@@ -58,13 +69,12 @@ public class OrderService {
             order.getItems().add(oi);
         }
 
-        // If the payment method is PayPal, create and capture a PayPal order
         if ("PAYPAL".equalsIgnoreCase(paymentMethod)) {
             Map<String, Object> createResponse = payPalPaymentService.createOrder(total, "USD");
             if (createResponse != null && createResponse.containsKey("id")) {
                 String payPalOrderId = (String) createResponse.get("id");
                 Map<String, Object> captureResponse = payPalPaymentService.captureOrder(payPalOrderId);
-                // Optionally, store captureResponse details in the Order entity if needed.
+                // Optionally, store details from captureResponse if required.
             }
         }
 
@@ -82,7 +92,7 @@ public class OrderService {
     }
 
     /**
-     * Returns a single order by ID.
+     * Returns a single order by its ID.
      */
     public Order getOrder(Long orderId) {
         return orderRepo.findById(orderId)
@@ -90,7 +100,7 @@ public class OrderService {
     }
 
     /**
-     * Returns orders filtered by user and date range.
+     * Returns orders filtered by user and/or date range.
      */
     public List<Order> filterOrders(Long userId, LocalDateTime start, LocalDateTime end) {
         if (userId != null && start != null && end != null) {

@@ -12,8 +12,8 @@
       </thead>
       <tbody>
       <tr v-for="order in orders" :key="order.id">
-        <td>{{ new Date(order.orderDate).toLocaleString() }}</td>
-        <td>{{ order.paymentMethod }}</td>
+        <td>{{ formatDate(order.orderDate) }}</td>
+        <td>{{ order.paymentMethod || 'N/A' }}</td>
         <td>${{ order.total }}</td>
         <td>
           <router-link :to="'/order/' + order.id" class="btn btn-info">
@@ -28,16 +28,26 @@
 
 <script>
 import api from '../services/api';
-
+import dayjs from 'dayjs';
 export default {
   data() {
     return {
       orders: []
     };
   },
+  methods: {
+    formatDate(dateString) {
+      if (!dateString) return '';
+      return dayjs(dateString).format('YYYY-MM-DD HH:mm:ss');
+    }
+  },
   async mounted() {
-    const res = await api.getOrders();
-    this.orders = res.data;
+    try {
+      const res = await api.getOrders();
+      this.orders = res.data;
+    } catch (error) {
+      console.error('Failed to load orders', error);
+    }
   }
 };
 </script>

@@ -48,7 +48,6 @@ export default createStore({
         async addToCart({ state }, { productId, quantity }) {
             try {
                 const response = await api.addToCart(productId, quantity);
-                // Either update the existing item or add the new one
                 const index = state.cart.findIndex(item => item.product.id === productId);
                 if (index !== -1) {
                     state.cart[index].quantity = response.data.quantity;
@@ -91,6 +90,16 @@ export default createStore({
                 commit('setCart', res.data);
             } catch (error) {
                 console.error('Error fetching cart:', error);
+            }
+        },
+        async placeOrder({ commit }, { paymentMethod }) {
+            try {
+                await api.placeOrder(paymentMethod);
+                commit('setCart', []); // Clear the cart after successful order
+                alert('Order placed successfully!');
+            } catch (error) {
+                console.error('Error placing order:', error);
+                alert('Failed to place order. Please try again.');
             }
         }
     }

@@ -33,11 +33,18 @@
             Details
           </router-link>
           <button
+              v-if="isAuthenticated && product.stockQuantity > 0"
               class="btn btn-success"
-              v-if="isAuthenticated"
               @click="addProductToCart(product.id)"
           >
             Add to Cart
+          </button>
+          <button
+              v-else-if="isAuthenticated"
+              class="btn btn-secondary"
+              disabled
+          >
+            Out of Stock
           </button>
         </td>
       </tr>

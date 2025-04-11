@@ -64,17 +64,16 @@ export default {
       return this.cart
           .reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0)
           .toFixed(2);
-    },
+    }
   },
   methods: {
-    ...mapActions(["fetchCart", "addToCart", "updateCartItem", "removeFromCart"]),
+    ...mapActions(["fetchCart", "updateCartItem", "removeFromCart", "placeOrder"]),
     updateQuantity: debounce(async function (item) {
       if (item.quantity <= 0) {
         item.quantity = 1;
         alert("Quantity cannot be less than 1.");
         return;
       }
-      // Enforce maximum quantity according to product stock
       if (item.product.stockQuantity && item.quantity > item.product.stockQuantity) {
         item.quantity = item.product.stockQuantity;
         alert("Quantity cannot exceed available stock.");
@@ -90,10 +89,21 @@ export default {
     removeItem(productId) {
       this.removeFromCart({ productId });
     },
-    checkout() {
-      alert("Proceeding to checkout...");
-      // Add checkout logic here
-    },
+    async checkout() {
+      // Prompt the user for a payment method (COD or PAYPAL)
+      let paymentMethod = window.prompt("Enter payment method (COD or PAYPAL)", "COD");
+      if (!paymentMethod) {
+        alert("Payment method is required.");
+        return;
+      }
+      try {
+        await this.placeOrder({ paymentMethod });
+        // Optionally, redirect to the orders page after successful checkout.
+        this.$router.push("/orders");
+      } catch (error) {
+        console.error("Checkout error:", error);
+      }
+    }
   },
   async mounted() {
     try {
@@ -101,12 +111,11 @@ export default {
     } catch (error) {
       console.error("Failed to load cart:", error);
     }
-  },
+  }
 };
 </script>
 
 <style scoped>
-/* Your scoped styles (unchanged) */
 .container {
   padding: 20px;
 }
