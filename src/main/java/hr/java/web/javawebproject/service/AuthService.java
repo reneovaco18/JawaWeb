@@ -25,23 +25,19 @@ public class AuthService {
     }
 
     public JwtResponse login(LoginRequest req, HttpServletRequest request) {
-        // 1) Spring Security auth
+        // 1) If the credentials are bad, this throws an AuthenticationException
+        //    => AbstractAuthenticationFailureEvent is fired, so the listener logs a fail record.
         authManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
         );
-        // 2) user from DB
+
+        // 2) If we get here, the user is authenticated => AuthenticationSuccessEvent is fired
         User user = userService.getByEmail(req.getEmail());
 
         // 3) Generate JWT
         String token = jwtUtil.generateToken(user);
 
-        // 4) Record login attempt
-        //userService.recordLogin(user, request.getRemoteAddr());
-
-        // 5) Mark in this request that we've already done a manual login record
-        request.setAttribute("loginRecorded", Boolean.TRUE);
-
-        // 6) Build response
+        // 4) Build the user DTO
         UserDto userDto = UserDto.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -49,10 +45,10 @@ public class AuthService {
                 .role(user.getRole())
                 .build();
 
+        // 5) Return a JwtResponse containing the token and user
         return JwtResponse.builder()
                 .token(token)
                 .user(userDto)
                 .build();
     }
-
 }

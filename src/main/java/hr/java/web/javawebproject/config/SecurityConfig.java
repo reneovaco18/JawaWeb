@@ -83,14 +83,13 @@ public class SecurityConfig {
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
 
-        // Create a ProviderManager...
+        // Create a ProviderManager that will publish success/failure events
         ProviderManager manager = new ProviderManager(provider);
-
-        // ...and set up a default event publisher to publish success/failure events
         manager.setAuthenticationEventPublisher(new DefaultAuthenticationEventPublisher(eventPublisher));
 
-        // (Optional) Erase credentials after auth
+        // Clear credentials from memory once done
         manager.setEraseCredentialsAfterAuthentication(true);
+
         return manager;
     }
 

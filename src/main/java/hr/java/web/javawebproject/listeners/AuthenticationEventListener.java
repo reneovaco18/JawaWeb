@@ -14,7 +14,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -33,26 +32,21 @@ public class AuthenticationEventListener implements ApplicationListener<Applicat
     }
 
     private void handleSuccessEvent(AuthenticationSuccessEvent event) {
-        // If the "loginRecorded" attribute is set, do nothing
-        if (alreadyRecordedInThisRequest()) {
-            return;
-        }
-
         Object principal = event.getAuthentication().getPrincipal();
 
-        // 1) Check if it’s our domain User
+        // 1) If the principal is our domain User
         if (principal instanceof hr.java.web.javawebproject.model.User domainUser) {
-            maybeSaveSuccessLogin(domainUser.getId(), domainUser.getEmail());
+            createSuccessRecord(domainUser.getId(), domainUser.getEmail());
 
-            // 2) Otherwise, it’s the Spring Security user, so do a lookup
+            // 2) If the principal is a Spring Security user => do a DB lookup by email
         } else if (principal instanceof org.springframework.security.core.userdetails.User secUser) {
             String email = secUser.getUsername();
             User domainUser = userRepository.findByEmail(email).orElse(null);
 
             if (domainUser != null) {
-                maybeSaveSuccessLogin(domainUser.getId(), domainUser.getEmail());
+                createSuccessRecord(domainUser.getId(), domainUser.getEmail());
             } else {
-                // No domain user found => record minimal info
+                // No domain user found => still record success with minimal info
                 LoginRecord record = LoginRecord.builder()
                         .attemptedUsername(email)
                         .loginTime(LocalDateTime.now())
@@ -65,42 +59,24 @@ public class AuthenticationEventListener implements ApplicationListener<Applicat
         }
     }
 
-    private boolean alreadyRecordedInThisRequest() {
-        try {
-            ServletRequestAttributes attrs =
-                    (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-
-            Object flag = attrs.getRequest().getAttribute("loginRecorded");
-            return Boolean.TRUE.equals(flag);
-        } catch (IllegalStateException ex) {
-            // No current request
-            return false;
-        }
-    }
-
-
-    private void maybeSaveSuccessLogin(Long userId, String email) {
-        // Check if we have already created a success record in the past 2 seconds
-        LocalDateTime cutoff = LocalDateTime.now().minusSeconds(2);
-        List<LoginRecord> recent = loginRecordRepository
-                .findByUserIdAndSuccessAndLoginTimeAfter(userId, true, cutoff);
-
-        // Only save if no recent success record yet
-        if (recent.isEmpty()) {
-            LoginRecord record = LoginRecord.builder()
-                    .user(userRepository.findById(userId).orElse(null))
-                    .attemptedUsername(email)
-                    .loginTime(LocalDateTime.now())
-                    .ipAddress(getClientIpAddress())
-                    .success(true)
-                    .userAgent(getUserAgent())
-                    .build();
-            loginRecordRepository.save(record);
-        }
+    private void createSuccessRecord(Long userId, String email) {
+        User domainUser = userRepository.findById(userId).orElse(null);
+        LoginRecord record = LoginRecord.builder()
+                .user(domainUser)
+                .attemptedUsername(email)
+                .loginTime(LocalDateTime.now())
+                .ipAddress(getClientIpAddress())
+                .success(true)
+                .userAgent(getUserAgent())
+                .build();
+        loginRecordRepository.save(record);
     }
 
     private void handleFailureEvent(AbstractAuthenticationFailureEvent event) {
+        // 1) The user tried logging in with an incorrect password or non-existent user
         String attemptedUsername = event.getAuthentication().getName();
+
+        // 2) Build a fail record
         LoginRecord record = LoginRecord.builder()
                 .attemptedUsername(attemptedUsername)
                 .loginTime(LocalDateTime.now())
@@ -113,22 +89,22 @@ public class AuthenticationEventListener implements ApplicationListener<Applicat
         loginRecordRepository.save(record);
     }
 
-
     private String getClientIpAddress() {
         try {
-            ServletRequestAttributes attributes =
+            ServletRequestAttributes attrs =
                     (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-            return attributes.getRequest().getRemoteAddr();
+            return attrs.getRequest().getRemoteAddr();
         } catch (IllegalStateException ex) {
+            // No request context
             return "unknown";
         }
     }
 
     private String getUserAgent() {
         try {
-            ServletRequestAttributes attributes =
+            ServletRequestAttributes attrs =
                     (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-            return attributes.getRequest().getHeader("User-Agent");
+            return attrs.getRequest().getHeader("User-Agent");
         } catch (IllegalStateException ex) {
             return "unknown";
         }
