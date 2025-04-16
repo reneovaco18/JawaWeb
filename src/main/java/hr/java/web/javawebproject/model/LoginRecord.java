@@ -1,7 +1,9 @@
 package hr.java.web.javawebproject.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Getter
@@ -17,18 +19,17 @@ public class LoginRecord {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = true)  // Change to true
+    // Force EAGER so that user data is always fetched
+    @ManyToOne(optional = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
-    private User user;
-
+    @JsonIgnoreProperties({"password", "hibernateLazyInitializer", "handler", "loginRecords"})
+    private User user; // <-- will be included in the JSON, minus ignored fields
 
     @Column(name = "attempted_username")
     private String attemptedUsername;
 
     private LocalDateTime loginTime;
-
     private String ipAddress;
-
     private boolean success;
 
     @Column(name = "failure_reason")
@@ -37,10 +38,16 @@ public class LoginRecord {
     @Column(name = "user_agent", length = 512)
     private String userAgent;
 
-    // Add proper record constructor with all fields
-    public LoginRecord(User user, String attemptedUsername, LocalDateTime loginTime,
-                       String ipAddress, boolean success, String failureReason,
-                       String userAgent) {
+    // Extra constructor for convenience
+    public LoginRecord(
+            User user,
+            String attemptedUsername,
+            LocalDateTime loginTime,
+            String ipAddress,
+            boolean success,
+            String failureReason,
+            String userAgent
+    ) {
         this.user = user;
         this.attemptedUsername = attemptedUsername;
         this.loginTime = loginTime;

@@ -14,4 +14,6 @@ public interface LoginRecordRepository extends JpaRepository<LoginRecord, Long> 
     List<LoginRecord> findByLoginTimeBetween(LocalDateTime start, LocalDateTime end);
 
     List<LoginRecord> findBySuccess(boolean success);
+    // New method: check if there's a recent success record for the same user
+    List<LoginRecord> findByUserIdAndSuccessAndLoginTimeAfter(Long userId, boolean success, LocalDateTime after);
 }

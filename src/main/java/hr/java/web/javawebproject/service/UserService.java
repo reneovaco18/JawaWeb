@@ -1,6 +1,5 @@
 package hr.java.web.javawebproject.service;
 
-
 import hr.java.web.javawebproject.dto.RegisterRequest;
 import hr.java.web.javawebproject.model.LoginRecord;
 import hr.java.web.javawebproject.model.User;
@@ -25,7 +24,7 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public User registerNewUser(RegisterRequest req) {
-        // check if email in use
+        // check if email is in use
         if (userRepo.findByEmail(req.getEmail()).isPresent()) {
             throw new RuntimeException("Email already in use");
         }
@@ -43,12 +42,18 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    /**
+     * Records a login with success = true and the user's email as attemptedUsername.
+     */
     public void recordLogin(User user, String ipAddress) {
         LoginRecord lr = LoginRecord.builder()
                 .user(user)
-                .ipAddress(ipAddress)
+                .attemptedUsername(user.getEmail())
                 .loginTime(LocalDateTime.now())
+                .ipAddress(ipAddress)
+                .success(true) // explicitly set success = true
                 .build();
+
         loginRecordRepo.save(lr);
     }
 }
