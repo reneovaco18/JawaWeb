@@ -1,13 +1,34 @@
-import api from '@/services/api';
+// src/store/index.js
 import { createStore } from 'vuex';
+import api from '@/services/api';
+
+/* ────────────────────────────────────────────────────────────────
+   Helper: pull a valid, non‑expired JWT from localStorage
+   → returns null if absent, the string token otherwise
+───────────────────────────────────────────────────────────────── */
+function loadToken() {
+    const raw = localStorage.getItem('token');
+    if (!raw || raw === 'null' || raw === '""') return null;
+
+    // (optional) verify expiry
+    try {
+        const { exp } = JSON.parse(atob(raw.split('.')[1]));
+        if (Date.now() / 1000 > exp) return null;     // expired
+    } catch { return null; }                        // malformed
+
+    return raw;
+}
 
 export default createStore({
+    /* ------------------------------------------------ STATE ---------- */
     state: {
-        user: null,
-        token: null,
-        role: null,
-        cart: []
+        user : null,
+        token: loadToken(),           // ← use helper instead of raw localStorage
+        role : null,
+        cart : []
     },
+
+    /* ------------------------------------------- MUTATIONS ----------- */
     mutations: {
         setUser(state, user) {
             state.user = user;
@@ -15,92 +36,142 @@ export default createStore({
         },
         setToken(state, token) {
             state.token = token;
-            localStorage.setItem('token', token);
-            document.cookie = `jwt=${token}; Secure; HttpOnly`;
+            if (token)  localStorage.setItem('token', token);
+            else        localStorage.removeItem('token');
+            // HttpOnly cannot be set from JS; keep your cookie line for symmetry
+            document.cookie = token
+                ? `jwt=${token}; Secure; HttpOnly`
+                : 'jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
         },
         logout(state) {
-            state.user = null;
-            state.token = null;
-            state.role = null;
+            state.user = state.token = state.role = null;
             state.cart = [];
             localStorage.removeItem('token');
-            document.cookie = `jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC;`;
+            document.cookie = 'jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
         },
         setCart(state, cart) {
             state.cart = cart;
         }
     },
+
+    /* --------------------------------------------- GETTERS ---------- */
+    getters: {
+
+        isAuthenticated: st => !!st.token && !!st.user
+    },
+
+    /* --------------------------------------------- ACTIONS ---------- */
     actions: {
+        /* ------------- Auth ---------------- */
         async login({ commit }, credentials) {
             try {
-                const response = await api.login(credentials);
-                commit('setUser', response.data.user);
-                commit('setToken', response.data.token);
+                const res = await api.login(credentials);
+                commit('setUser',  res.data.user);
+                commit('setToken', res.data.token);
                 return true;
-            } catch (error) {
-                console.error('Login failed:', error);
+            } catch (e) {
+                console.error('Login failed:', e);
                 return false;
             }
         },
-        logout({ commit }) {
-            commit('logout');
+        logout({ commit }) { commit('logout'); },
+
+        /* ------------- Cart ---------------- */
+        async fetchCart({ commit }) {
+            try { commit('setCart', (await api.getCart()).data); }
+            catch (e) { console.error('Error fetching cart:', e); }
         },
-        async addToCart({ state }, { productId, quantity }) {
+
+        async addToCart({ commit, state, getters }, { productId, quantity }) {
+            if (!getters.isAuthenticated) {
+                window.location.href = '/login?redirect=product';
+                return;
+            }
             try {
-                const response = await api.addToCart(productId, quantity);
-                const index = state.cart.findIndex(item => item.product.id === productId);
-                if (index !== -1) {
-                    state.cart[index].quantity = response.data.quantity;
-                } else {
-                    state.cart.push(response.data);
-                }
-                alert('Product added to cart successfully!');
-            } catch (error) {
-                console.error('Error adding product to cart:', error);
-                alert('Failed to add product to cart. Please try again.');
+                const res    = await api.addToCart(productId, quantity);
+                const exists = state.cart.find(i => i.product.id === productId);
+                const cart   = exists
+                    ? state.cart.map(i => (i.product.id === productId ? res.data : i))
+                    : [...state.cart, res.data];
+                commit('setCart', cart);
+                alert('Product added to cart!');
+            } catch (e) {
+                console.error('Error adding to cart:', e);
+                alert('Failed—please try again.');
             }
         },
-        async updateCartItem({ state }, { productId, quantity }) {
+
+        async updateCartItem({ commit, state, getters }, { productId, quantity }) {
+            if (!getters.isAuthenticated) {
+                window.location.href = '/login?redirect=cart';
+                return;
+            }
             try {
-                const response = await api.updateCartItem(productId, quantity);
-                const index = state.cart.findIndex(item => item.product.id === productId);
-                if (index !== -1) {
-                    state.cart[index] = response.data;
-                }
-                alert('Cart updated successfully!');
-            } catch (error) {
-                console.error('Error updating cart item:', error);
-                alert('Failed to update product quantity. Please try again.');
+                const res = await api.updateCartItem(productId, quantity);
+                commit('setCart',
+                    state.cart.map(i => (i.product.id === productId ? res.data : i)));
+            } catch (e) {
+                console.error('Error updating cart item:', e);
+                alert('Failed to update product quantity.');
             }
         },
-        async removeFromCart({ commit, state }, { productId }) {
+
+        async removeFromCart({ commit, state, getters }, { productId }) {
+            if (!getters.isAuthenticated) {
+                window.location.href = '/login?redirect=cart';
+                return;
+            }
             try {
                 await api.removeFromCart(productId);
-                const updatedCart = state.cart.filter(item => item.product.id !== productId);
-                commit('setCart', updatedCart);
-                alert('Product removed from cart successfully!');
-            } catch (error) {
-                console.error('Error removing product from cart:', error);
-                alert('Failed to remove product from cart.');
+                commit('setCart', state.cart.filter(i => i.product.id !== productId));
+            } catch (e) {
+                console.error('Error removing from cart:', e);
             }
         },
-        async fetchCart({ commit }) {
-            try {
-                const res = await api.getCart();
-                commit('setCart', res.data);
-            } catch (error) {
-                console.error('Error fetching cart:', error);
+
+        /* …all previously‑sent code unchanged above… */
+
+        /* ------------- Orders ------------- */
+        /**
+         * COD still uses Axios (-> api.placeOrder).
+         * PAYPAL: Axios gets {approvalUrl:"…"} and JS navigates there
+         * (top‑level navigation ⇒ no CORS).
+         */
+        async placeOrder({ commit, getters }, paymentMethod) {
+            if (!getters.isAuthenticated) {
+                window.location.href = '/login?redirect=checkout';
+                return;
             }
-        },
-        async placeOrder({ commit }, { paymentMethod }) {
+
+            const pm = String(paymentMethod).toUpperCase();
+
+            /* ------ PAYPAL ------ */
+            if (pm === 'PAYPAL') {
+                try {
+                    const { data } = await api.placeOrder('PAYPAL');
+                    if (data.approvalUrl) {
+                        window.location.href = data.approvalUrl;
+                    } else {
+                        alert('PayPal approval URL missing.');
+                    }
+                } catch (e) {
+                    console.error('PayPal order error:', e);
+                    alert('Unable to start PayPal checkout.');
+                }
+                return;
+            }
+
+            /* ------ COD / others ------ */
             try {
-                await api.placeOrder(paymentMethod);
-                commit('setCart', []); // Clear the cart after successful order
+                await api.placeOrder(pm);
+                commit('setCart', []);
                 alert('Order placed successfully!');
-            } catch (error) {
-                console.error('Error placing order:', error);
-                alert('Failed to place order. Please try again.');
+            } catch (e) {
+                console.error('Error placing order:', e);
+                alert('Failed to place order.');
             }
         }
+        /* …rest of file unchanged… */
+
     }
 });

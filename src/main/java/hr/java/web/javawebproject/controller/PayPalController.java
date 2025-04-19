@@ -6,63 +6,56 @@ import hr.java.web.javawebproject.service.OrderService;
 import hr.java.web.javawebproject.service.PayPalPaymentService;
 import hr.java.web.javawebproject.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.Map;
 
-@RestController
+@Controller
 @RequestMapping("/api/paypal")
 @RequiredArgsConstructor
 public class PayPalController {
 
-    private final PayPalPaymentService payPalPaymentService;
+    private final PayPalPaymentService payPalService;
     private final OrderService orderService;
     private final UserService userService;
 
+    @Value("${app.frontendUrl}")
+    private String frontendUrl;
+
     /**
-     * Endpoint to create a PayPal order.
-     * This computes the order total from the current user's cart, creates the PayPal order,
-     * and returns the approval URL so the front end can redirect the buyer.
+     * Step 1: Browser GET → this returns a 302 that the browser will follow (to PayPal)
      */
-    @PostMapping("/create")
-    public ResponseEntity<?> createPayPalOrder(Authentication auth) {
-        // Get the current user
+    @GetMapping("/checkout")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public RedirectView checkout(Authentication auth) {
         User user = userService.getByEmail(auth.getName());
-        // Compute the order total from the user's cart.
-        // (You can reuse your logic in OrderService.placeOrder or a dedicated method.)
         BigDecimal total = orderService.computeCartTotal(user);
-        // Call PayPal to create the order
-        Map<String, Object> payPalResponse = payPalPaymentService.createOrder(total, "USD");
-        if (payPalResponse != null && payPalResponse.containsKey("approvalUrl")) {
-            // Return the PayPal order id and approval URL to the front end
-            Map<String, Object> responseBody = new HashMap<>();
-            responseBody.put("payPalOrderId", payPalResponse.get("id"));
-            responseBody.put("approvalUrl", payPalResponse.get("approvalUrl"));
-            responseBody.put("totalAmount", total);
-            return ResponseEntity.ok(responseBody);
-        } else {
-            return ResponseEntity.status(500).body("Failed to create PayPal order");
-        }
+
+        Map<String, Object> resp = payPalService.createOrder(total, "USD");
+        String approvalUrl = (String) resp.get("approvalUrl");
+        return new RedirectView(approvalUrl);
     }
 
     /**
-     * Endpoint to capture a PayPal order after the buyer has approved it.
-     * Once captured, this method finalizes the order by storing it in the database,
-     * deducting stock, and clearing the cart.
+     * Step 2: PayPal calls this with ?token=… after approval; we capture and then send the user back
      */
-    @PostMapping("/capture")
-    public ResponseEntity<?> capturePayPalOrder(@RequestParam String payPalOrderId, Authentication auth) {
-        // Capture the PayPal order
-        Map<String, Object> captureResponse = payPalPaymentService.captureOrder(payPalOrderId);
-        // Optionally, verify the capture response (for example, check status == "COMPLETED").
-        // Now finalize the order in our system.
+    @GetMapping("/return")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public RedirectView complete(
+            String token,
+            Authentication auth
+    ) {
+        payPalService.captureOrder(token);
         User user = userService.getByEmail(auth.getName());
-        Order finalizedOrder = orderService.finalizePayPalOrder(user);
-        // Return the finalized order details to the front end.
-        return ResponseEntity.ok(finalizedOrder);
+        Order order = orderService.finalizePayPalOrder(user);
+        // Redirect back to your Vue app’s order details page
+        return new RedirectView(frontendUrl + "/order/" + order.getId());
     }
 }

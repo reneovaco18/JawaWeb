@@ -32,6 +32,7 @@
           <router-link :to="'/product/' + product.id" class="btn btn-info">
             Details
           </router-link>
+          <!-- Authenticated & in‑stock -->
           <button
               v-if="isAuthenticated && product.stockQuantity > 0"
               class="btn btn-success"
@@ -39,8 +40,17 @@
           >
             Add to Cart
           </button>
+          <!-- Guest & in‑stock -->
           <button
-              v-else-if="isAuthenticated"
+              v-else-if="!isAuthenticated && product.stockQuantity > 0"
+              class="btn btn-success"
+              @click="goLogin"
+          >
+            Add to Cart
+          </button>
+          <!-- Out of stock -->
+          <button
+              v-else
               class="btn btn-secondary"
               disabled
           >
@@ -85,6 +95,9 @@ export default {
       } catch (error) {
         console.error('Error adding item to cart:', error);
       }
+    },
+    goLogin() {
+      this.$router.push('/login');
     }
   },
   mounted() {

@@ -3,8 +3,10 @@ package hr.java.web.javawebproject.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 import jakarta.persistence.*;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,7 +25,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Many orders to one user
+    // Many orders to one user, but we ignore the full User object in JSON
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
     @JsonIgnore
@@ -36,8 +38,20 @@ public class Order {
 
     private BigDecimal total;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "order",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.EAGER)
     @Builder.Default
     @JsonIgnoreProperties("order") // Prevent recursion
     private List<OrderItem> items = new ArrayList<>();
+
+    /**
+     * Expose just the user's email in the JSON payload,
+     * so admins can see who placed each order.
+     */
+    @JsonProperty("userEmail")
+    public String getUserEmail() {
+        return (user != null) ? user.getEmail() : null;
+    }
 }
